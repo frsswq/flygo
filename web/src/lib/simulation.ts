@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { MAX_BOARD_SIZE, MIN_BOARD_SIZE } from "@/lib/board";
-import type { Stone } from "@/lib/board";
 
 const stoneSchema = z.union([z.literal(-1), z.literal(0), z.literal(1)]);
 const sizeSchema = z.number().int().min(MIN_BOARD_SIZE).max(MAX_BOARD_SIZE);
@@ -14,12 +13,23 @@ const activeNeuronSchema = z.object({
   superclass: z.string().nullable(),
 });
 
+const scoreSchema = z.object({
+  black_area: z.number().int(),
+  komi: z.number(),
+  label: z.string(),
+  margin: z.number(),
+  white_area: z.number().int(),
+  winner: z.number().int(),
+});
+
 const simulationResponseSchema = z.object({
   activity: z.array(activeNeuronSchema),
   legal_actions: z.array(actionSchema),
   model_status: z.string(),
   recommended_action: actionSchema,
+  ruleset: z.string(),
   size: sizeSchema,
+  to_play: z.number().int(),
   topology: z.string(),
 });
 
@@ -31,24 +41,20 @@ const turnResponseSchema = z
     consecutive_passes: z.number().int().min(0).max(2),
     game_over: z.boolean(),
     legal_actions: z.array(actionSchema),
-    previous_board: z.array(stoneSchema).nullable(),
+    moves: z.array(actionSchema),
+    ruleset: z.string(),
+    score: scoreSchema.nullable(),
     size: sizeSchema,
+    to_play: z.number().int(),
   })
   .refine((value) => value.board.length === value.size * value.size, {
     message: "Board length must match the board size",
   });
 
 export type ActiveNeuron = z.infer<typeof activeNeuronSchema>;
+export type Score = z.infer<typeof scoreSchema>;
 export type SimulationResponse = z.infer<typeof simulationResponseSchema>;
 export type TurnResponse = z.infer<typeof turnResponseSchema>;
-
-interface TurnRequest {
-  action: number;
-  board: readonly Stone[];
-  consecutivePasses: number;
-  previousBoard: readonly Stone[] | null;
-  size: number;
-}
 
 const parseResponse = async <Response>(
   response: globalThis.Response,
@@ -62,37 +68,27 @@ const parseResponse = async <Response>(
   return schema.parse(payload);
 };
 
-export const simulatePosition = async (
-  board: readonly Stone[],
-  size: number,
-  signal?: AbortSignal
-): Promise<SimulationResponse> => {
-  const response = await fetch("/api/simulate", {
-    body: JSON.stringify({ board, size, to_play: 1 }),
+const postJson = (path: string, body: unknown, signal?: AbortSignal) =>
+  fetch(path, {
+    body: JSON.stringify(body),
     headers: { "Content-Type": "application/json" },
     method: "POST",
     signal,
   });
+
+export const simulatePosition = async (
+  moves: readonly number[],
+  size: number,
+  signal?: AbortSignal
+): Promise<SimulationResponse> => {
+  const response = await postJson("/api/simulate", { moves, size }, signal);
   return parseResponse(response, simulationResponseSchema);
 };
 
-export const playTurn = async ({
-  action,
-  board,
-  consecutivePasses,
-  previousBoard,
-  size,
-}: TurnRequest): Promise<TurnResponse> => {
-  const response = await fetch("/api/play", {
-    body: JSON.stringify({
-      action,
-      board,
-      consecutive_passes: consecutivePasses,
-      previous_board: previousBoard,
-      size,
-    }),
-    headers: { "Content-Type": "application/json" },
-    method: "POST",
-  });
+export const playTurn = async (
+  moves: readonly number[],
+  size: number
+): Promise<TurnResponse> => {
+  const response = await postJson("/api/play", { moves, size });
   return parseResponse(response, turnResponseSchema);
 };

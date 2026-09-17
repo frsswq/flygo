@@ -1,6 +1,6 @@
 # FlyGo
 
-FlyGo tests whether the official MaleCNS fruit-fly connectome provides useful computational structure for learning 5x5 Go.
+FlyGo tests whether the official MaleCNS fruit-fly connectome provides useful computational structure for learning Go on boards from 5x5 through 9x9.
 The biological topology stays frozen while experiments train an encoder and readout around it.
 
 > **Research question:** Can a real biological connectome provide useful computational structure for learning an unrelated task like Go?
@@ -32,6 +32,8 @@ uv run fastapi dev
 Open <http://127.0.0.1:8000>.
 The bundled visualization uses a small, deterministic subgraph derived from the official release.
 You play Black, and FlyGo automatically applies a White response after each legal move.
+Two passes in a row end the game, and the status word then reports the area score.
+The ruleset is Tromp-Taylor with area scoring, positional superko, and komi 0.0 on 5x5 and 7.5 above.
 Its encoder and readout are intentionally untrained at this stage.
 
 ## Official data
@@ -86,7 +88,7 @@ See the [experiment protocol](docs/experiment.md) for controls, metrics, and val
 src/flygo/
 ├── official_data.py   # Official downloads, compatibility boundary, and profiling
 ├── connectome.py      # Frozen graph and lightweight dynamics
-├── go.py              # Immutable 5x5 Go rules and features
+├── go.py              # Immutable Go rules, scoring, and features
 ├── model.py           # Trainable encoder/readout and controls
 ├── api.py             # FastAPI research viewer
 ├── assets/            # Small official derived subgraph for the viewer

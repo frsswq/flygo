@@ -1,20 +1,21 @@
 import { useEffect, useReducer } from "react";
+import type { Dispatch } from "react";
 
 import { DEFAULT_BOARD_SIZE, emptyBoard } from "@/lib/board";
 import type { Stone } from "@/lib/board";
 import { playTurn, simulatePosition } from "@/lib/simulation";
-import type { ActiveNeuron, TurnResponse } from "@/lib/simulation";
+import type { ActiveNeuron, Score, TurnResponse } from "@/lib/simulation";
 
 interface GameState {
   activity: number[];
   board: Stone[];
-  consecutivePasses: number;
   error: string | null;
   gameOver: boolean;
   isLoading: boolean;
   lastMove: number | null;
   legalActions: number[];
-  previousBoard: Stone[] | null;
+  moves: number[];
+  score: Score | null;
   size: number;
 }
 
@@ -31,13 +32,13 @@ const activitiesOf = (neurons: ActiveNeuron[]): number[] =>
 const initialState = (size: number): GameState => ({
   activity: [],
   board: emptyBoard(size),
-  consecutivePasses: 0,
   error: null,
   gameOver: false,
   isLoading: true,
   lastMove: null,
   legalActions: [],
-  previousBoard: null,
+  moves: [],
+  score: null,
   size,
 });
 
@@ -67,7 +68,6 @@ const reducer = (state: GameState, action: GameAction): GameState => {
         ...state,
         activity: activitiesOf(result.activity),
         board: result.board,
-        consecutivePasses: result.consecutive_passes,
         gameOver: result.game_over,
         isLoading: false,
         lastMove:
@@ -76,7 +76,8 @@ const reducer = (state: GameState, action: GameAction): GameState => {
             ? action.action
             : result.computer_action,
         legalActions: result.legal_actions,
-        previousBoard: result.previous_board,
+        moves: result.moves,
+        score: result.score,
       };
     }
     default: {
@@ -88,6 +89,27 @@ const reducer = (state: GameState, action: GameAction): GameState => {
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : "Unknown simulation error";
 
+const load = async (
+  dispatch: Dispatch<GameAction>,
+  size: number,
+  signal?: AbortSignal
+) => {
+  try {
+    const result = await simulatePosition([], size, signal);
+    if (!signal?.aborted) {
+      dispatch({
+        activity: activitiesOf(result.activity),
+        legalActions: result.legal_actions,
+        type: "brain-ready",
+      });
+    }
+  } catch (error: unknown) {
+    if (!signal?.aborted) {
+      dispatch({ message: errorMessage(error), type: "failed" });
+    }
+  }
+};
+
 export const useFlyGoGame = () => {
   const [state, dispatch] = useReducer(
     reducer,
@@ -97,45 +119,13 @@ export const useFlyGoGame = () => {
 
   useEffect(() => {
     const controller = new AbortController();
-    const warmUp = async () => {
-      try {
-        const result = await simulatePosition(
-          emptyBoard(DEFAULT_BOARD_SIZE),
-          DEFAULT_BOARD_SIZE,
-          controller.signal
-        );
-        if (!controller.signal.aborted) {
-          dispatch({
-            activity: activitiesOf(result.activity),
-            legalActions: result.legal_actions,
-            type: "brain-ready",
-          });
-        }
-      } catch (error: unknown) {
-        if (!controller.signal.aborted) {
-          dispatch({ message: errorMessage(error), type: "failed" });
-        }
-      }
-    };
-    void warmUp();
+    void load(dispatch, DEFAULT_BOARD_SIZE, controller.signal);
     return () => controller.abort();
   }, []);
 
   const start = (size: number) => {
     dispatch({ size, type: "reset" });
-    const load = async () => {
-      try {
-        const result = await simulatePosition(emptyBoard(size), size);
-        dispatch({
-          activity: activitiesOf(result.activity),
-          legalActions: result.legal_actions,
-          type: "brain-ready",
-        });
-      } catch (error: unknown) {
-        dispatch({ message: errorMessage(error), type: "failed" });
-      }
-    };
-    void load();
+    void load(dispatch, size);
   };
 
   const play = async (action: number) => {
@@ -144,13 +134,7 @@ export const useFlyGoGame = () => {
     }
     dispatch({ type: "thinking" });
     try {
-      const result = await playTurn({
-        action,
-        board: state.board,
-        consecutivePasses: state.consecutivePasses,
-        previousBoard: state.previousBoard,
-        size: state.size,
-      });
+      const result = await playTurn([...state.moves, action], state.size);
       dispatch({ action, result, type: "turn-complete" });
     } catch (error: unknown) {
       dispatch({ message: errorMessage(error), type: "failed" });
@@ -159,7 +143,7 @@ export const useFlyGoGame = () => {
 
   let status = "Your turn";
   if (state.gameOver) {
-    status = "Game over";
+    status = state.score?.label ?? "Game over";
   } else if (state.isLoading) {
     status = "Thinking";
   }

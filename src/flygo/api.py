@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Annotated, Literal, Self
+from typing import Annotated, Self
 
 import polars as pl
 from fastapi import FastAPI, HTTPException, Query
@@ -12,7 +13,14 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, model_validator
 
 from flygo.connectome import FloatArray, from_frame
-from flygo.go import BOARD_SIZES, DEFAULT_BOARD_SIZE, MAX_BOARD_SIZE, MIN_BOARD_SIZE, Position
+from flygo.go import (
+    BOARD_SIZES,
+    DEFAULT_BOARD_SIZE,
+    MAX_BOARD_SIZE,
+    MIN_BOARD_SIZE,
+    RULESET,
+    Position,
+)
 from flygo.model import ConnectomePolicy
 
 PACKAGE_DIRECTORY = Path(__file__).parent
@@ -21,6 +29,8 @@ STATIC_DIRECTORY = PACKAGE_DIRECTORY / "static"
 TOPOLOGY_DESCRIPTION = "Official MaleCNS v1.0 derived sensory-path sample (461 neurons, 605 edges)"
 MODEL_STATUS = "Untrained encoder/readout demonstration"
 BOARD_SIZE_FIELD = Field(default=DEFAULT_BOARD_SIZE, ge=MIN_BOARD_SIZE, le=MAX_BOARD_SIZE)
+MOVE_LIMIT_FACTOR = 4
+MOVE_LIMIT_OFFSET = 16
 
 _edges = pl.read_parquet(ASSET_DIRECTORY / "malecns-sample.parquet")
 _neurons = pl.read_parquet(ASSET_DIRECTORY / "malecns-sample-neurons.parquet")
@@ -31,40 +41,43 @@ _neuron_lookup = {row["id"]: row for row in _neurons.iter_rows(named=True)}
 app = FastAPI(
     title="FlyGo",
     summary="Play Go against a frozen sample of official MaleCNS wiring.",
-    version="0.2.0",
+    version="0.3.0",
 )
 app.mount("/static", StaticFiles(directory=STATIC_DIRECTORY), name="static")
 
 
-class BoardPayload(BaseModel):
-    """A square board with an optional previous board for the ko rule."""
+class MoveSequence(BaseModel):
+    """A whole game as the list of actions played so far, oldest first.
+
+    The server replays the list, so the position, the turn, and the ko history
+    are derived from one source of truth instead of being sent by the client.
+    """
 
     size: int = BOARD_SIZE_FIELD
-    board: list[Literal[-1, 0, 1]]
-    previous_board: list[Literal[-1, 0, 1]] | None = None
+    moves: list[int]
 
     @model_validator(mode="after")
-    def check_board_shape(self) -> Self:
-        expected = self.size * self.size
-        if len(self.board) != expected:
-            raise ValueError(f"A {self.size}x{self.size} board needs {expected} points")
-        if self.previous_board is not None and len(self.previous_board) != expected:
-            raise ValueError("previous_board must match the board size")
+    def check_moves(self) -> Self:
+        limit = MOVE_LIMIT_FACTOR * self.size * self.size + MOVE_LIMIT_OFFSET
+        if len(self.moves) > limit:
+            raise ValueError(f"A {self.size}x{self.size} game cannot exceed {limit} actions")
+        pass_action = self.size * self.size
+        if any(not 0 <= action <= pass_action for action in self.moves):
+            raise ValueError("Every action must be a board point or pass")
         return self
 
 
-class PositionRequest(BoardPayload):
-    to_play: Literal[-1, 1] = 1
+class PositionRequest(MoveSequence):
+    """A position to evaluate, given as the moves that reached it."""
 
 
-class TurnRequest(BoardPayload):
-    action: int = Field(ge=0)
-    consecutive_passes: int = Field(default=0, ge=0, le=1)
+class TurnRequest(MoveSequence):
+    """A game where the last action is the move to apply now."""
 
     @model_validator(mode="after")
-    def check_action(self) -> Self:
-        if self.action > self.size * self.size:
-            raise ValueError("Action must be a board point or pass")
+    def check_last_move(self) -> Self:
+        if not self.moves:
+            raise ValueError("A turn needs at least one action")
         return self
 
 
@@ -75,8 +88,19 @@ class ActiveNeuron(BaseModel):
     superclass: str | None
 
 
+class ScorePayload(BaseModel):
+    black_area: int
+    white_area: int
+    komi: float
+    winner: int
+    margin: float
+    label: str
+
+
 class SimulationResponse(BaseModel):
     size: int
+    to_play: int
+    ruleset: str
     recommended_action: int
     legal_actions: list[int]
     activity: list[ActiveNeuron]
@@ -86,12 +110,15 @@ class SimulationResponse(BaseModel):
 
 class TurnResponse(BaseModel):
     size: int
+    moves: list[int]
     board: list[int]
-    previous_board: list[int] | None
+    to_play: int
+    ruleset: str
     computer_action: int | None
     legal_actions: list[int]
     consecutive_passes: int
     game_over: bool
+    score: ScorePayload | None
     activity: list[ActiveNeuron]
 
 
@@ -114,6 +141,34 @@ def _strongest_neurons(activity: FloatArray) -> list[ActiveNeuron]:
     return active_neurons
 
 
+def _replay(size: int, moves: Sequence[int]) -> Position:
+    position = Position.empty(size)
+    for action in moves:
+        position = position.play(action)
+    return position
+
+
+def _trailing_passes(moves: Sequence[int], pass_action: int) -> int:
+    count = 0
+    for action in reversed(moves):
+        if action != pass_action:
+            break
+        count += 1
+    return count
+
+
+def _score(position: Position) -> ScorePayload:
+    result = position.result()
+    return ScorePayload(
+        black_area=result.black_area,
+        white_area=result.white_area,
+        komi=result.komi,
+        winner=result.winner,
+        margin=result.margin,
+        label=result.label,
+    )
+
+
 @app.get("/", include_in_schema=False)
 def index() -> FileResponse:
     return FileResponse(STATIC_DIRECTORY / "index.html")
@@ -121,7 +176,7 @@ def index() -> FileResponse:
 
 @app.get("/api/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "dataset": "male-cns:v1.0"}
+    return {"status": "ok", "dataset": "male-cns:v1.0", "ruleset": RULESET}
 
 
 @app.post("/api/simulate")
@@ -129,9 +184,9 @@ def simulate(
     request: PositionRequest,
     steps: Annotated[int, Query(ge=1, le=32)] = 8,
 ) -> SimulationResponse:
+    """Report the policy reading of the position that ``request.moves`` reaches."""
     try:
-        position = Position(tuple(request.board), request.to_play, None, request.size)
-        legal = position.legal_actions()
+        position = _replay(request.size, request.moves)
         policy = _policies[request.size]
         activity = policy.activity(position, steps=steps)
         action = policy.choose_legal_action(position)
@@ -140,8 +195,10 @@ def simulate(
 
     return SimulationResponse(
         size=request.size,
+        to_play=position.to_play,
+        ruleset=RULESET,
         recommended_action=action,
-        legal_actions=list(legal),
+        legal_actions=list(position.legal_actions()),
         activity=_strongest_neurons(activity),
         topology=TOPOLOGY_DESCRIPTION,
         model_status=MODEL_STATUS,
@@ -150,32 +207,36 @@ def simulate(
 
 @app.post("/api/play")
 def play_turn(request: TurnRequest) -> TurnResponse:
-    """Apply one Black move and an automatic FlyGo White response."""
+    """Apply the last action, then let FlyGo answer as White."""
+    pass_action = request.size * request.size
+    if _trailing_passes(request.moves[:-1], pass_action) >= 2:
+        raise HTTPException(status_code=422, detail="That game is already over")
     try:
-        previous_board = tuple(request.previous_board) if request.previous_board else None
-        position = Position(tuple(request.board), 1, previous_board, request.size)
-        after_human = position.play(request.action)
-        activity = _policies[request.size].activity(after_human)
-
-        pass_count = request.consecutive_passes + 1 if request.action == position.pass_action else 0
-        game_over = pass_count == 2
+        position = _replay(request.size, request.moves)
+        passes = _trailing_passes(request.moves, pass_action)
+        game_over = passes >= 2
+        moves = list(request.moves)
         computer_action = None
-        result = after_human
         if not game_over:
-            computer_action = _policies[request.size].choose_legal_action(after_human)
-            result = after_human.play(computer_action)
-            pass_count = pass_count + 1 if computer_action == after_human.pass_action else 0
-            game_over = pass_count == 2
+            computer_action = _policies[request.size].choose_legal_action(position)
+            position = position.play(computer_action)
+            moves.append(computer_action)
+            passes = _trailing_passes(moves, pass_action)
+            game_over = passes >= 2
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
+    activity = _policies[request.size].activity(position)
     return TurnResponse(
-        size=result.size,
-        board=list(result.board),
-        previous_board=list(result.previous_board) if result.previous_board else None,
+        size=position.size,
+        moves=moves,
+        board=list(position.board),
+        to_play=position.to_play,
+        ruleset=RULESET,
         computer_action=computer_action,
-        legal_actions=[] if game_over else list(result.legal_actions()),
-        consecutive_passes=pass_count,
+        legal_actions=[] if game_over else list(position.legal_actions()),
+        consecutive_passes=passes,
         game_over=game_over,
+        score=_score(position) if game_over else None,
         activity=_strongest_neurons(activity),
     )
