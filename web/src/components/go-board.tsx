@@ -35,9 +35,10 @@ interface OverlayStyle extends CSSProperties {
   "--grid-span": string;
 }
 
-const BOARD_PADDING = 0.055;
+const BOARD_MARGIN = 0.75;
+const STONE_RATIO = 0.46;
+const RIM_RATIO = 0.3;
 const ACTIVITY_HEIGHT = 24;
-const EDGE_WIDTH = 0.022;
 const HOSHI: Readonly<Record<number, readonly (readonly [number, number])[]>> =
   {
     7: [
@@ -57,9 +58,9 @@ const HOSHI: Readonly<Record<number, readonly (readonly [number, number])[]>> =
   };
 
 const geometry = (side: number, size: number): Geometry => {
-  const pad = side * BOARD_PADDING;
-  const span = Math.max(side - 2 * pad, 1);
-  return { left: pad, pad, step: span / Math.max(size - 1, 1) };
+  const step = side / (size - 1 + 2 * BOARD_MARGIN);
+  const pad = BOARD_MARGIN * step;
+  return { left: pad, pad, step };
 };
 
 const readTheme = (element: HTMLElement): Theme => {
@@ -136,9 +137,9 @@ const drawBoard = (
   context.clearRect(0, 0, side, side);
 
   const theme = readTheme(canvas);
-  const { left, step } = geometry(side, size);
-  const radius = step * 0.47;
-  const edge = side * EDGE_WIDTH;
+  const { left, pad, step } = geometry(side, size);
+  const radius = step * STONE_RATIO;
+  const edge = pad * RIM_RATIO;
   const gridSpan = (size - 1) * step;
 
   context.fillStyle = theme.edge;
