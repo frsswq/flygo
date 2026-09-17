@@ -1,0 +1,42 @@
+[project]
+name = "flygo"
+version = "0.1.0"
+description = "Test whether the official MaleCNS connectome can provide useful structure for learning 5x5 Go."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "FlyGo contributors" }]
+dependencies = [
+  "fastapi[standard]>=0.128.0",
+  "numpy>=2.2.0",
+  "polars>=1.37.0",
+  "pyarrow>=25.0.1",
+]
+
+[project.scripts]
+flygo = "flygo.cli:main"
+
+[dependency-groups]
+dev = [
+  "basedpyright>=1.40.1",
+  "httpx>=0.28.0",
+  "pytest>=9.0.0",
+  "ruff>=0.14.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.28,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.fastapi]
+entrypoint = "flygo.api:app"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
