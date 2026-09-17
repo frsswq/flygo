@@ -12,9 +12,6 @@ make static
 That writes `web/dist/`, the directory to publish.
 It serves `/assets/*` (content hashed) and `/flygo/*` (the graph and one policy per board size).
 `web/public/_headers` sets the cache policy for both.
-That writes `web/dist/`, the directory to publish.
-It serves `/assets/*` (content hashed) and `/flygo/*` (the graph and one policy per board size).
-`web/public/_headers` sets the cache policy for both.
 
 Publish that directory with `wrangler`:
 
@@ -26,6 +23,27 @@ CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
 The project `flygo` serves the production branch `main` at <https://flygo.pages.dev>.
 The command prints the URL of each deployment, including the immutable preview URL for that build.
 Keep the token outside the repository, for example in `~/.config/.wrangler/cf-api-token`.
+
+## Custom domain
+
+The project also carries the hostname `gofly.farissaifuddin.com`.
+The hostname is attached, but it is not live yet.
+
+Two conditions are missing:
+
+1. `farissaifuddin.com` is under a client hold at its registrar, so the domain does not resolve at all.
+   RDAP reports that status, and only the registrar can lift it.
+2. The zone must sit in the same Cloudflare account as the Pages project, and a `gofly` record must point at `flygo.pages.dev`.
+   Both Cloudflare nameservers published for the domain answer `REFUSED`, which is what Cloudflare returns for a zone it does not host.
+
+The Pages API reports the second condition as `CNAME record not set`:
+
+```bash
+curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/flygo/domains/gofly.farissaifuddin.com"
+```
+
+Until both conditions hold, publish and share `https://flygo.pages.dev`.
 
 ## Cloudflare settings
 
