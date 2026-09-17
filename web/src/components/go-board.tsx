@@ -289,10 +289,10 @@ export const GoBoard = ({
   return (
     <div className="flex w-full flex-col items-center gap-3">
       <fieldset
+        aria-label={`Go board, ${size} by ${size}`}
         className="board-frame relative aspect-square w-full max-w-lg"
         ref={containerRef}
       >
-        <legend className="sr-only">{`Go board, ${size} by ${size}`}</legend>
         <canvas className="board-canvas" ref={canvasRef} />
         {side > 0 ? (
           <div className="board-grid" style={overlay}>
