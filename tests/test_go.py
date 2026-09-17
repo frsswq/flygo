@@ -2,7 +2,12 @@
 
 import pytest
 
-from flygo.go import BOARD_SIZES, Position
+from flygo.go import BOARD_SIZES, DEFAULT_BOARD_SIZE, Position
+
+
+def test_default_board_size_is_nine() -> None:
+    assert DEFAULT_BOARD_SIZE == 9
+    assert Position.empty().points == 81
 
 
 @pytest.mark.parametrize("size", BOARD_SIZES)
@@ -18,7 +23,7 @@ def test_play_captures_surrounded_stone() -> None:
     board = [0] * 25
     board[1] = board[5] = board[11] = 1
     board[6] = -1
-    position = Position(tuple(board), 1)
+    position = Position(tuple(board), 1, None, 5)
 
     result = position.play(7)
 
@@ -42,7 +47,7 @@ def test_capture_keeps_the_board_size() -> None:
 
 
 def test_occupied_point_is_illegal() -> None:
-    position = Position((1,) + (0,) * 24, -1)
+    position = Position((1,) + (0,) * 24, -1, None, 5)
 
     with pytest.raises(ValueError, match="occupied"):
         position.play(0)

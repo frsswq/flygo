@@ -1,7 +1,7 @@
 import { GoBoard } from "@/components/go-board";
 import { Button } from "@/components/ui/button";
 import { useFlyGoGame } from "@/hooks/use-flygo-game";
-import { BOARD_SIZES, MIN_BOARD_SIZE, passActionFor } from "@/lib/board";
+import { BOARD_SIZES, passActionFor } from "@/lib/board";
 import { cn } from "@/lib/utils";
 
 const App = () => {
@@ -42,13 +42,11 @@ const App = () => {
           onChange={(event) => selectSize(Number(event.target.value))}
           value={size}
         >
-          {BOARD_SIZES.filter((option) => option >= MIN_BOARD_SIZE).map(
-            (option) => (
-              <option key={option} value={option}>
-                {option}x{option}
-              </option>
-            )
-          )}
+          {BOARD_SIZES.map((option) => (
+            <option key={option} value={option}>
+              {option}x{option}
+            </option>
+          ))}
         </select>
 
         <p

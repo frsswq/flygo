@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   actionLabel,
   BOARD_SIZES,
+  DEFAULT_BOARD_SIZE,
   emptyBoard,
   isBoardSize,
   passActionFor,
@@ -17,6 +18,11 @@ describe("Go board presentation", () => {
     expect(board).toHaveLength(pointsFor(size));
     expect(board.every((stone) => stone === 0)).toBeTruthy();
     expect(passActionFor(size)).toBe(pointsFor(size));
+  });
+
+  it("starts a new game on a nine by nine board", () => {
+    expect(DEFAULT_BOARD_SIZE).toBe(9);
+    expect(emptyBoard(DEFAULT_BOARD_SIZE)).toHaveLength(81);
   });
 
   it("creates a fresh board for each game", () => {

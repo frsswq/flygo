@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 
 MIN_BOARD_SIZE = 5
 MAX_BOARD_SIZE = 9
-DEFAULT_BOARD_SIZE = 5
+DEFAULT_BOARD_SIZE = 9
 BOARD_SIZES = tuple(range(MIN_BOARD_SIZE, MAX_BOARD_SIZE + 1))
 
 

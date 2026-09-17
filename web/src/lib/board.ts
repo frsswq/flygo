@@ -3,7 +3,7 @@ export type Stone = -1 | 0 | 1;
 export const BOARD_SIZES = [5, 6, 7, 8, 9] as const;
 export const MIN_BOARD_SIZE = 5;
 export const MAX_BOARD_SIZE = 9;
-export const DEFAULT_BOARD_SIZE = 5;
+export const DEFAULT_BOARD_SIZE = 9;
 
 export type BoardSize = (typeof BOARD_SIZES)[number];
 

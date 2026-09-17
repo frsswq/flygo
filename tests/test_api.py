@@ -19,11 +19,18 @@ def test_health_names_official_dataset() -> None:
 
 
 def test_simulation_uses_bundled_official_subgraph() -> None:
-    result = simulate(PositionRequest(board=[0] * 25, to_play=1))
+    result = simulate(PositionRequest(size=5, board=[0] * 25, to_play=1))
 
     assert result.size == 5
     assert result.topology.startswith("Official MaleCNS v1.0")
     assert len(result.activity) == 40
+    assert result.recommended_action in result.legal_actions
+
+
+def test_default_board_size_is_nine() -> None:
+    result = simulate(PositionRequest(board=[0] * 81, to_play=1))
+
+    assert result.size == 9
     assert result.recommended_action in result.legal_actions
 
 
@@ -37,7 +44,7 @@ def test_every_board_size_can_be_simulated(size: int) -> None:
 
 
 def test_human_move_gets_automatic_computer_response() -> None:
-    result = play_turn(TurnRequest(board=[0] * 25, action=0))
+    result = play_turn(TurnRequest(size=5, board=[0] * 25, action=0))
 
     assert result.board[0] == 1
     assert result.computer_action is not None
@@ -47,7 +54,7 @@ def test_human_move_gets_automatic_computer_response() -> None:
 
 
 def test_second_consecutive_pass_ends_game_without_computer_move() -> None:
-    result = play_turn(TurnRequest(board=[0] * 25, action=25, consecutive_passes=1))
+    result = play_turn(TurnRequest(size=5, board=[0] * 25, action=25, consecutive_passes=1))
 
     assert result.game_over
     assert result.computer_action is None
