@@ -6,6 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
+from flygo.conformance import DEFAULT_CONFORMANCE, write_conformance
 from flygo.official_data import download_official_files, prepare_traced_graph, write_profile
 
 DEFAULT_RAW = Path("data/raw")
@@ -28,6 +29,12 @@ def parser() -> argparse.ArgumentParser:
     prepare.add_argument("--data", type=Path, default=DEFAULT_RAW)
     prepare.add_argument("--output", type=Path, default=DEFAULT_GRAPH)
     prepare.add_argument("--minimum-weight", type=int, default=5)
+
+    conformance = commands.add_parser(
+        "conformance",
+        help="Regenerate the shared rules conformance fixture",
+    )
+    conformance.add_argument("--output", type=Path, default=DEFAULT_CONFORMANCE)
     return root
 
 
@@ -49,6 +56,11 @@ def main() -> None:
             minimum_weight=arguments.minimum_weight,
         )
         print(arguments.output)
+    elif arguments.command == "conformance":
+        fixture = write_conformance(arguments.output)
+        print(
+            f"{arguments.output}: {len(fixture['cases'])} cases, {len(fixture['illegal'])} illegal"
+        )
 
 
 if __name__ == "__main__":

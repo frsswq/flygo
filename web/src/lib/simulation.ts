@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { MAX_BOARD_SIZE, MIN_BOARD_SIZE } from "@/lib/board";
+import { MAX_BOARD_SIZE, MIN_BOARD_SIZE } from "@/lib/go-rules";
 
 const stoneSchema = z.union([z.literal(-1), z.literal(0), z.literal(1)]);
 const sizeSchema = z.number().int().min(MIN_BOARD_SIZE).max(MAX_BOARD_SIZE);

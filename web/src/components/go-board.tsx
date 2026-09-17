@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 
 import { pointLabel } from "@/lib/board";
-import type { Stone } from "@/lib/board";
+import type { Stone } from "@/lib/go-rules";
 
 interface GoBoardProps {
   activity: readonly number[];

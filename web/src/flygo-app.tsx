@@ -1,7 +1,7 @@
 import { GoBoard } from "@/components/go-board";
 import { Button } from "@/components/ui/button";
 import { useFlyGoGame } from "@/hooks/use-flygo-game";
-import { BOARD_SIZES, passActionFor } from "@/lib/board";
+import { BOARD_SIZES, passActionFor } from "@/lib/go-rules";
 import { cn } from "@/lib/utils";
 
 const App = () => {

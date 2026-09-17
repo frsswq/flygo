@@ -1,8 +1,8 @@
 import { useEffect, useReducer } from "react";
 import type { Dispatch } from "react";
 
-import { DEFAULT_BOARD_SIZE, emptyBoard } from "@/lib/board";
-import type { Stone } from "@/lib/board";
+import { DEFAULT_BOARD_SIZE, emptyBoard } from "@/lib/go-rules";
+import type { Stone } from "@/lib/go-rules";
 import { playTurn, simulatePosition } from "@/lib/simulation";
 import type { ActiveNeuron, Score, TurnResponse } from "@/lib/simulation";
 
