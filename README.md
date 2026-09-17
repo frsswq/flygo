@@ -190,11 +190,13 @@ Run all checks:
 ```bash
 uv run ruff format --check .
 uv run ruff check .
+uv run vulture
 uv run basedpyright
 uv run pytest
 cd web
 npm run check
 npm run typecheck
+npm run knip
 npm test
 npm run build
 ```
@@ -204,6 +206,13 @@ Or run every check at once:
 ```bash
 make check
 ```
+
+Dead code has its own gate for each language:
+
+- `uv run vulture` covers Python. It runs at a confidence of 60, because vulture assigns that confidence to unused functions, methods, and classes; the 80 default would hide them. `[tool.vulture]` in `pyproject.toml` lists the names that pydantic calls at runtime or that belong to the documented response schema and the planned baseline surface.
+- `npm run knip` covers the web app: unused exports, unused files, and unused dependencies. `web/knip.json` exempts `src/components/ui/**` exports, which are the vendored shadcn component API.
+
+Both checks exit non-zero when they find something, so they can run in continuous integration as-is.
 
 `make build` writes into `src/flygo/static/` for FastAPI to serve.
 `make static` writes the deployable build into `web/dist/`.

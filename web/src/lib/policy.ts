@@ -11,10 +11,9 @@ import { z } from "zod";
 import type { Position } from "@/lib/go-rules";
 import { pointsFor } from "@/lib/go-rules";
 
-export const GRAPH_MAGIC = 0x47_59_4c_46;
-export const POLICY_MAGIC = 0x50_59_4c_46;
-export const BUNDLE_VERSION = 1;
-export const DEFAULT_STEPS = 8;
+const GRAPH_MAGIC = 0x47_59_4c_46;
+const POLICY_MAGIC = 0x50_59_4c_46;
+const BUNDLE_VERSION = 1;
 
 const manifestSchema = z.object({
   dynamics: z.object({
@@ -41,7 +40,6 @@ const manifestSchema = z.object({
 });
 
 export type Manifest = z.infer<typeof manifestSchema>;
-export type PolicyEntry = Manifest["policies"][number];
 
 export interface GraphBundle {
   readonly edgeCount: number;
@@ -161,7 +159,7 @@ export const dynamicsOf = (manifest: Manifest): Dynamics => ({
   steps: manifest.dynamics.steps,
 });
 
-export const featuresOf = (position: Position): Float32Array => {
+const featuresOf = (position: Position): Float32Array => {
   const { board, size, toPlay } = position;
   const points = pointsFor(size);
   const features = new Float32Array(2 * points + 1);
@@ -222,7 +220,7 @@ const stepGraph = (
   return next;
 };
 
-export const runGraph = (
+const runGraph = (
   graph: GraphBundle,
   dynamics: Dynamics,
   externalInput: Float32Array,
@@ -267,7 +265,6 @@ export const logitsOf = (
   }
   return logits;
 };
-
 /** Pick the strongest legal action, keeping the first of any tie. */
 export const chooseAction = (
   logits: Float32Array,
@@ -284,22 +281,6 @@ export const chooseAction = (
   }
   return best;
 };
-
-export const strongestNeurons = (
-  activity: Float32Array,
-  limit = 40
-): number[] => {
-  const indices = Array.from({ length: activity.length }, (_, index) => index);
-  return indices
-    .toSorted((a, b) => Math.abs(activity[b]) - Math.abs(activity[a]))
-    .slice(0, limit);
-};
-
-export const strongestActivity = (
-  activity: Float32Array,
-  limit = 40
-): number[] =>
-  strongestNeurons(activity, limit).map((index) => activity[index]);
 
 /** Fetch a bundle written by `flygo export-web`. */
 export const loadWebBundle = async (

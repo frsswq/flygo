@@ -178,20 +178,3 @@ def read_graph_header(path: Path) -> tuple[int, int]:
     if version != GRAPH_VERSION:
         raise ValueError(f"{path} has version {version}, expected {GRAPH_VERSION}")
     return node_count, edge_count
-
-
-def arrays_from_policy_file(path: Path) -> tuple[PolicyHeader, list[float], list[float]]:
-    """Read an exported policy, for tests and tooling."""
-    header_fields = struct.unpack("<IIIIII", path.read_bytes()[:24])
-    magic, version, size, node_count, feature_count, action_count = header_fields
-    if magic != POLICY_MAGIC:
-        raise ValueError(f"{path} is not a FlyGo policy bundle")
-    if version != POLICY_VERSION:
-        raise ValueError(f"{path} has version {version}, expected {POLICY_VERSION}")
-    header = PolicyHeader(size, node_count, feature_count, action_count)
-    values = struct.unpack(
-        f"<{action_count * node_count + node_count * feature_count}f",
-        path.read_bytes()[24:],
-    )
-    split = node_count * feature_count
-    return header, list(values[:split]), list(values[split:])

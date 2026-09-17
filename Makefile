@@ -15,8 +15,10 @@ static: ## Build the deployable static app for a host that serves the root
 check: ## Run every Python and web check
 	@uv run ruff format --check .
 	@uv run ruff check .
+	@uv run vulture
 	@uv run basedpyright
 	@uv run pytest
 	@npm --prefix web run check
 	@npm --prefix web run typecheck
+	@npm --prefix web run knip
 	@npm --prefix web test

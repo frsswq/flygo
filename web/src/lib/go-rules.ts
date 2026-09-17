@@ -17,15 +17,13 @@ export const DEFAULT_BOARD_SIZE = 9;
 export const RULESET = "Tromp-Taylor, area scoring, positional superko";
 
 /** Komi is 0 on 5x5 so the published solved result of Black +25 holds. */
-export const KOMI_BY_SIZE: Readonly<Record<number, number>> = {
+const KOMI_BY_SIZE: Readonly<Record<number, number>> = {
   5: 0,
   6: 7.5,
   7: 7.5,
   8: 7.5,
   9: 7.5,
 };
-
-export type BoardSize = (typeof BOARD_SIZES)[number];
 
 export interface Position {
   readonly board: readonly Stone[];
@@ -49,9 +47,6 @@ export class IllegalMoveError extends Error {
     this.name = "IllegalMoveError";
   }
 }
-
-export const isBoardSize = (value: number): value is BoardSize =>
-  (BOARD_SIZES as readonly number[]).includes(value);
 
 export const pointsFor = (size: number): number => size * size;
 
@@ -95,7 +90,7 @@ export const decodeBoard = (text: string): Stone[] =>
     throw new RangeError(`Unknown board symbol '${symbol}'`);
   });
 
-export const emptyPosition = (size: number, toPlay: Player = 1): Position => ({
+const emptyPosition = (size: number, toPlay: Player = 1): Position => ({
   board: emptyBoard(size),
   history: new Set<string>(),
   size,

@@ -22,6 +22,7 @@ dev = [
   "httpx>=0.28.0",
   "pytest>=9.0.0",
   "ruff>=0.14.0",
+  "vulture>=2.14",
 ]
 
 [build-system]
@@ -40,3 +41,24 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.vulture]
+# 60 is the confidence vulture assigns to unused functions, methods, and
+# classes. Its 80 default hides them, which would make the check useless.
+min_confidence = 60
+paths = ["src", "tests"]
+exclude = ["web"]
+# Called by pydantic at runtime, or part of the documented response schema or
+# the planned baseline and readout surface.
+ignore_names = [
+  "check_moves",
+  "check_last_move",
+  "comparison_table",
+  "fit_readout",
+  "linear_baseline_logits",
+  "model_status",
+  "neuron_type",
+  "ruleset",
+  "superclass",
+  "topology",
+]
