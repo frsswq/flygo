@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "flygo",
+  "project_id": "6fa28482-7917-4bf3-8bb8-45e588cca9fa"
+}
