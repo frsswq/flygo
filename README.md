@@ -103,6 +103,15 @@ PyArrow exists only as a compatibility boundary for one nullable dictionary colu
 
 ## Development
 
+Start the FastAPI and Vite development servers together:
+
+```bash
+make dev
+```
+
+Open <http://127.0.0.1:5173>.
+Stopping `make dev` also stops both child servers.
+
 Run all checks:
 
 ```bash

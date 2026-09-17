@@ -1,0 +1,1 @@
+{"id":"int-291d709f9060393c2a3e2166d40c50e5","kind":"field_change","created_at":"2026-09-17T05:51:19.464332188Z","actor":"frsswq","issue_id":"flygo-aao","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Added and verified make dev runner with clean shutdown for both FastAPI and Vite."}}
