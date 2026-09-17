@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Self
 
 import polars as pl
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from flygo.connectome import FloatArray, from_frame
-from flygo.go import PASS, Position
+from flygo.go import BOARD_SIZES, DEFAULT_BOARD_SIZE, MAX_BOARD_SIZE, MIN_BOARD_SIZE, Position
 from flygo.model import ConnectomePolicy
 
 PACKAGE_DIRECTORY = Path(__file__).parent
@@ -20,33 +20,52 @@ ASSET_DIRECTORY = PACKAGE_DIRECTORY / "assets"
 STATIC_DIRECTORY = PACKAGE_DIRECTORY / "static"
 TOPOLOGY_DESCRIPTION = "Official MaleCNS v1.0 derived sensory-path sample (461 neurons, 605 edges)"
 MODEL_STATUS = "Untrained encoder/readout demonstration"
+BOARD_SIZE_FIELD = Field(default=DEFAULT_BOARD_SIZE, ge=MIN_BOARD_SIZE, le=MAX_BOARD_SIZE)
 
 _edges = pl.read_parquet(ASSET_DIRECTORY / "malecns-sample.parquet")
 _neurons = pl.read_parquet(ASSET_DIRECTORY / "malecns-sample-neurons.parquet")
 _connectome = from_frame(_edges)
-_policy = ConnectomePolicy.initialize(_connectome)
+_policies = {size: ConnectomePolicy.initialize(_connectome, size=size) for size in BOARD_SIZES}
 _neuron_lookup = {row["id"]: row for row in _neurons.iter_rows(named=True)}
 
 app = FastAPI(
     title="FlyGo",
-    summary="Explore 5x5 Go through a frozen sample of official MaleCNS wiring.",
-    version="0.1.0",
+    summary="Play Go against a frozen sample of official MaleCNS wiring.",
+    version="0.2.0",
 )
 app.mount("/static", StaticFiles(directory=STATIC_DIRECTORY), name="static")
 
 
-class PositionRequest(BaseModel):
-    board: list[Literal[-1, 0, 1]] = Field(min_length=25, max_length=25)
-    to_play: Literal[-1, 1]
+class BoardPayload(BaseModel):
+    """A square board with an optional previous board for the ko rule."""
+
+    size: int = BOARD_SIZE_FIELD
+    board: list[Literal[-1, 0, 1]]
+    previous_board: list[Literal[-1, 0, 1]] | None = None
+
+    @model_validator(mode="after")
+    def check_board_shape(self) -> Self:
+        expected = self.size * self.size
+        if len(self.board) != expected:
+            raise ValueError(f"A {self.size}x{self.size} board needs {expected} points")
+        if self.previous_board is not None and len(self.previous_board) != expected:
+            raise ValueError("previous_board must match the board size")
+        return self
 
 
-class TurnRequest(BaseModel):
-    board: list[Literal[-1, 0, 1]] = Field(min_length=25, max_length=25)
-    previous_board: list[Literal[-1, 0, 1]] | None = Field(
-        default=None, min_length=25, max_length=25
-    )
-    action: int = Field(ge=0, le=PASS)
+class PositionRequest(BoardPayload):
+    to_play: Literal[-1, 1] = 1
+
+
+class TurnRequest(BoardPayload):
+    action: int = Field(ge=0)
     consecutive_passes: int = Field(default=0, ge=0, le=1)
+
+    @model_validator(mode="after")
+    def check_action(self) -> Self:
+        if self.action > self.size * self.size:
+            raise ValueError("Action must be a board point or pass")
+        return self
 
 
 class ActiveNeuron(BaseModel):
@@ -57,6 +76,7 @@ class ActiveNeuron(BaseModel):
 
 
 class SimulationResponse(BaseModel):
+    size: int
     recommended_action: int
     legal_actions: list[int]
     activity: list[ActiveNeuron]
@@ -65,6 +85,7 @@ class SimulationResponse(BaseModel):
 
 
 class TurnResponse(BaseModel):
+    size: int
     board: list[int]
     previous_board: list[int] | None
     computer_action: int | None
@@ -109,14 +130,16 @@ def simulate(
     steps: Annotated[int, Query(ge=1, le=32)] = 8,
 ) -> SimulationResponse:
     try:
-        position = Position(tuple(request.board), request.to_play)
+        position = Position(tuple(request.board), request.to_play, None, request.size)
         legal = position.legal_actions()
-        activity = _policy.activity(position, steps=steps)
-        action = _policy.choose_legal_action(position)
+        policy = _policies[request.size]
+        activity = policy.activity(position, steps=steps)
+        action = policy.choose_legal_action(position)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
     return SimulationResponse(
+        size=request.size,
         recommended_action=action,
         legal_actions=list(legal),
         activity=_strongest_neurons(activity),
@@ -130,23 +153,24 @@ def play_turn(request: TurnRequest) -> TurnResponse:
     """Apply one Black move and an automatic FlyGo White response."""
     try:
         previous_board = tuple(request.previous_board) if request.previous_board else None
-        position = Position(tuple(request.board), 1, previous_board)
+        position = Position(tuple(request.board), 1, previous_board, request.size)
         after_human = position.play(request.action)
-        activity = _policy.activity(after_human)
+        activity = _policies[request.size].activity(after_human)
 
-        pass_count = request.consecutive_passes + 1 if request.action == PASS else 0
+        pass_count = request.consecutive_passes + 1 if request.action == position.pass_action else 0
         game_over = pass_count == 2
         computer_action = None
         result = after_human
         if not game_over:
-            computer_action = _policy.choose_legal_action(after_human)
+            computer_action = _policies[request.size].choose_legal_action(after_human)
             result = after_human.play(computer_action)
-            pass_count = pass_count + 1 if computer_action == PASS else 0
+            pass_count = pass_count + 1 if computer_action == after_human.pass_action else 0
             game_over = pass_count == 2
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error
 
     return TurnResponse(
+        size=result.size,
         board=list(result.board),
         previous_board=list(result.previous_board) if result.previous_board else None,
         computer_action=computer_action,

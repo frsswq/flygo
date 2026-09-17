@@ -1,87 +1,324 @@
-import { RotateCcwIcon } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 
-import { Button } from "@/components/ui/button";
-import { PASS_ACTION } from "@/lib/board";
+import { pointLabel } from "@/lib/board";
 import type { Stone } from "@/lib/board";
-import { cn } from "@/lib/utils";
 
 interface GoBoardProps {
+  activity: readonly number[];
   board: readonly Stone[];
   disabled: boolean;
-  lastComputerAction: number | null;
+  lastMove: number | null;
   legalActions: readonly number[];
   onPlay: (action: number) => void;
-  onReset: () => void;
+  size: number;
 }
 
-const stoneName = (stone: Stone): string => {
-  if (stone === 1) {
-    return "black";
+interface Geometry {
+  left: number;
+  pad: number;
+  step: number;
+}
+
+interface Theme {
+  board: string;
+  edge: string;
+  line: string;
+  negative: string;
+  positive: string;
+  shadow: string;
+}
+
+interface OverlayStyle extends CSSProperties {
+  "--grid-columns": string;
+  "--grid-inset": string;
+  "--grid-span": string;
+}
+
+const BOARD_PADDING = 0.055;
+const ACTIVITY_HEIGHT = 24;
+const EDGE_WIDTH = 0.022;
+const HOSHI: Readonly<Record<number, readonly (readonly [number, number])[]>> =
+  {
+    7: [
+      [2, 2],
+      [2, 4],
+      [3, 3],
+      [4, 2],
+      [4, 4],
+    ],
+    9: [
+      [2, 2],
+      [2, 6],
+      [4, 4],
+      [6, 2],
+      [6, 6],
+    ],
+  };
+
+const geometry = (side: number, size: number): Geometry => {
+  const pad = side * BOARD_PADDING;
+  const span = Math.max(side - 2 * pad, 1);
+  return { left: pad, pad, step: span / Math.max(size - 1, 1) };
+};
+
+const readTheme = (element: HTMLElement): Theme => {
+  const style = getComputedStyle(element);
+  const read = (name: string, fallback: string): string =>
+    style.getPropertyValue(name).trim() || fallback;
+  return {
+    board: read("--board", "#d8b070"),
+    edge: read("--board-edge", "#a8763c"),
+    line: read("--board-line", "#33240f"),
+    negative: read("--chart-2", "#4a7bd8"),
+    positive: read("--chart-1", "#b8e63c"),
+    shadow: read("--board-shadow", "rgb(0 0 0 / 45%)"),
+  };
+};
+
+const drawStone = (
+  context: CanvasRenderingContext2D,
+  centerX: number,
+  centerY: number,
+  radius: number,
+  black: boolean,
+  theme: Theme,
+  alpha: number
+): void => {
+  context.save();
+  context.globalAlpha = alpha;
+  context.beginPath();
+  context.arc(centerX, centerY, radius, 0, Math.PI * 2);
+  const gradient = context.createRadialGradient(
+    centerX - radius * 0.35,
+    centerY - radius * 0.4,
+    radius * 0.15,
+    centerX,
+    centerY,
+    radius
+  );
+  if (black) {
+    gradient.addColorStop(0, "#6b6560");
+    gradient.addColorStop(0.55, "#161310");
+    gradient.addColorStop(1, "#000000");
+  } else {
+    gradient.addColorStop(0, "#ffffff");
+    gradient.addColorStop(0.65, "#f6f2e8");
+    gradient.addColorStop(1, "#cfc7b6");
   }
-  if (stone === -1) {
-    return "white";
+  context.fillStyle = gradient;
+  context.shadowBlur = radius * 0.6;
+  context.shadowColor = theme.shadow;
+  context.shadowOffsetY = radius * 0.18;
+  context.fill();
+  context.restore();
+};
+
+const drawBoard = (
+  canvas: HTMLCanvasElement,
+  side: number,
+  size: number,
+  board: readonly Stone[],
+  hovered: number | null,
+  lastMove: number | null
+): void => {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
   }
-  return "empty";
+  const scale = window.devicePixelRatio || 1;
+  const pixelSide = Math.round(side * scale);
+  if (canvas.width !== pixelSide) {
+    canvas.width = pixelSide;
+    canvas.height = pixelSide;
+  }
+  context.setTransform(scale, 0, 0, scale, 0, 0);
+  context.clearRect(0, 0, side, side);
+
+  const theme = readTheme(canvas);
+  const { left, step } = geometry(side, size);
+  const radius = step * 0.47;
+  const edge = side * EDGE_WIDTH;
+  const gridSpan = (size - 1) * step;
+
+  context.fillStyle = theme.edge;
+  context.fillStyle = theme.board;
+  context.fillRect(edge, edge, side - 2 * edge, side - 2 * edge);
+  context.fillRect(0, 0, side, side);
+
+  context.strokeStyle = theme.line;
+  context.lineWidth = Math.max(1, side / 640);
+  context.beginPath();
+  for (let index = 0; index < size; index += 1) {
+    const offset = left + index * step;
+    context.moveTo(left, offset);
+    context.lineTo(left + gridSpan, offset);
+    context.moveTo(offset, left);
+    context.lineTo(offset, left + gridSpan);
+  }
+  context.stroke();
+
+  context.fillStyle = theme.line;
+  for (const [row, column] of HOSHI[size] ?? []) {
+    context.beginPath();
+    context.arc(
+      left + column * step,
+      left + row * step,
+      step * 0.09,
+      0,
+      Math.PI * 2
+    );
+    context.fill();
+  }
+
+  for (const [point, stone] of board.entries()) {
+    if (stone === 0) {
+      continue;
+    }
+    const centerX = left + (point % size) * step;
+    const centerY = left + Math.floor(point / size) * step;
+    drawStone(context, centerX, centerY, radius, stone === 1, theme, 1);
+  }
+
+  if (hovered !== null && board[hovered] === 0) {
+    const centerX = left + (hovered % size) * step;
+    const centerY = left + Math.floor(hovered / size) * step;
+    drawStone(context, centerX, centerY, radius, true, theme, 0.4);
+  }
+
+  if (
+    lastMove !== null &&
+    board[lastMove] !== undefined &&
+    board[lastMove] !== 0
+  ) {
+    const centerX = left + (lastMove % size) * step;
+    const centerY = left + Math.floor(lastMove / size) * step;
+    context.fillStyle = board[lastMove] === 1 ? theme.positive : theme.negative;
+    context.beginPath();
+    context.arc(centerX, centerY, radius * 0.24, 0, Math.PI * 2);
+    context.fill();
+  }
+};
+
+const drawActivity = (
+  canvas: HTMLCanvasElement,
+  values: readonly number[],
+  side: number
+): void => {
+  const context = canvas.getContext("2d");
+  if (!context) {
+    return;
+  }
+  const scale = window.devicePixelRatio || 1;
+  const pixelWidth = Math.round(side * scale);
+  const pixelHeight = Math.round(ACTIVITY_HEIGHT * scale);
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+  context.setTransform(scale, 0, 0, scale, 0, 0);
+  context.clearRect(0, 0, side, ACTIVITY_HEIGHT);
+  if (values.length === 0) {
+    return;
+  }
+
+  const theme = readTheme(canvas);
+  const peak = Math.max(...values.map((value) => Math.abs(value)), 0.0001);
+  const slot = side / values.length;
+  const bar = Math.max(1, slot * 0.55);
+  const middle = ACTIVITY_HEIGHT / 2;
+
+  for (const [index, value] of values.entries()) {
+    const extent = (Math.abs(value) / peak) * middle * 0.92;
+    const x = index * slot + (slot - bar) / 2;
+    context.fillStyle = value >= 0 ? theme.positive : theme.negative;
+    context.fillRect(x, value >= 0 ? middle - extent : middle, bar, extent);
+  }
 };
 
 export const GoBoard = ({
+  activity,
   board,
   disabled,
-  lastComputerAction,
+  lastMove,
   legalActions,
   onPlay,
-  onReset,
+  size,
 }: GoBoardProps) => {
-  const legalActionSet = new Set(legalActions);
+  const containerRef = useRef<HTMLFieldSetElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const activityRef = useRef<HTMLCanvasElement>(null);
+  const [side, setSide] = useState(0);
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const element = containerRef.current;
+    if (!element) {
+      return;
+    }
+    const measure = () => setSide(element.getBoundingClientRect().width);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas && side > 0) {
+      drawBoard(canvas, side, size, board, disabled ? null : hovered, lastMove);
+    }
+  }, [board, disabled, hovered, lastMove, side, size]);
+
+  useEffect(() => {
+    const canvas = activityRef.current;
+    if (canvas && side > 0) {
+      drawActivity(canvas, activity, side);
+    }
+  }, [activity, side]);
+
+  const legal = new Set(legalActions);
+  const { pad, step } = geometry(side, size);
+  const overlay: OverlayStyle = {
+    "--grid-columns": `repeat(${size}, 1fr)`,
+    "--grid-inset": `${pad - step / 2}px`,
+    "--grid-span": `${step * size}px`,
+  };
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-muted-foreground text-sm">
-          You play Black. FlyGo answers White.
-        </p>
-        <Button
-          disabled={disabled}
-          onClick={onReset}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          <RotateCcwIcon data-icon="inline-start" />
-          New game
-        </Button>
-      </div>
-
-      <div className="go-board mx-auto grid aspect-square w-full max-w-96 min-w-0 grid-cols-5">
-        {board.map((stone, point) => {
-          const row = Math.floor(point / 5) + 1;
-          const column = (point % 5) + 1;
-          const pointName = stoneName(stone);
-          return (
-            <button
-              aria-label={`Row ${row}, column ${column}: ${pointName}`}
-              className={cn("go-point", pointName, {
-                "last-move": lastComputerAction === point,
-              })}
-              disabled={disabled || stone !== 0 || !legalActionSet.has(point)}
-              key={`${row}-${column}`}
-              onClick={() => onPlay(point)}
-              type="button"
-            />
-          );
-        })}
-      </div>
-
-      <div className="flex items-center justify-end gap-3">
-        <Button
-          disabled={disabled || !legalActionSet.has(PASS_ACTION)}
-          onClick={() => onPlay(PASS_ACTION)}
-          type="button"
-          variant="outline"
-        >
-          Pass
-        </Button>
-      </div>
+    <div className="flex w-full flex-col items-center gap-3">
+      <fieldset
+        className="board-frame relative aspect-square w-full max-w-lg"
+        ref={containerRef}
+      >
+        <legend className="sr-only">{`Go board, ${size} by ${size}`}</legend>
+        <canvas className="board-canvas" ref={canvasRef} />
+        {side > 0 ? (
+          <div className="board-grid" style={overlay}>
+            {board.map((stone, point) => {
+              const row = Math.floor(point / size) + 1;
+              const column = (point % size) + 1;
+              return (
+                <button
+                  aria-label={pointLabel(stone, row, column)}
+                  className="board-point"
+                  disabled={disabled || stone !== 0 || !legal.has(point)}
+                  key={point}
+                  onClick={() => onPlay(point)}
+                  onPointerEnter={() => setHovered(point)}
+                  onPointerLeave={() => setHovered(null)}
+                  type="button"
+                />
+              );
+            })}
+          </div>
+        ) : null}
+      </fieldset>
+      <canvas
+        aria-hidden="true"
+        className="board-activity max-w-lg"
+        ref={activityRef}
+      />
     </div>
   );
 };

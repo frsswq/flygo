@@ -1,39 +1,44 @@
 import { useEffect, useReducer } from "react";
 
-import { emptyBoard } from "@/lib/board";
+import { DEFAULT_BOARD_SIZE, emptyBoard } from "@/lib/board";
 import type { Stone } from "@/lib/board";
 import { playTurn, simulatePosition } from "@/lib/simulation";
 import type { ActiveNeuron, TurnResponse } from "@/lib/simulation";
 
 interface GameState {
-  activity: ActiveNeuron[];
+  activity: number[];
   board: Stone[];
   consecutivePasses: number;
   error: string | null;
   gameOver: boolean;
   isLoading: boolean;
-  lastComputerAction: number | null;
+  lastMove: number | null;
   legalActions: number[];
   previousBoard: Stone[] | null;
+  size: number;
 }
 
 type GameAction =
-  | { type: "brain-ready"; activity: ActiveNeuron[]; legalActions: number[] }
+  | { type: "brain-ready"; activity: number[]; legalActions: number[] }
   | { type: "failed"; message: string }
-  | { type: "reset" }
+  | { type: "reset"; size: number }
   | { type: "thinking" }
-  | { type: "turn-complete"; result: TurnResponse };
+  | { type: "turn-complete"; action: number; result: TurnResponse };
 
-const initialState = (): GameState => ({
+const activitiesOf = (neurons: ActiveNeuron[]): number[] =>
+  neurons.map((neuron) => neuron.activity);
+
+const initialState = (size: number): GameState => ({
   activity: [],
-  board: emptyBoard(),
+  board: emptyBoard(size),
   consecutivePasses: 0,
   error: null,
   gameOver: false,
   isLoading: true,
-  lastComputerAction: null,
+  lastMove: null,
   legalActions: [],
   previousBoard: null,
+  size,
 });
 
 const reducer = (state: GameState, action: GameAction): GameState => {
@@ -50,22 +55,28 @@ const reducer = (state: GameState, action: GameAction): GameState => {
       return { ...state, error: action.message, isLoading: false };
     }
     case "reset": {
-      return initialState();
+      return initialState(action.size);
     }
     case "thinking": {
       return { ...state, error: null, isLoading: true };
     }
     case "turn-complete": {
+      const { result } = action;
+      const passAction = result.size * result.size;
       return {
         ...state,
-        activity: action.result.activity,
-        board: action.result.board,
-        consecutivePasses: action.result.consecutive_passes,
-        gameOver: action.result.game_over,
+        activity: activitiesOf(result.activity),
+        board: result.board,
+        consecutivePasses: result.consecutive_passes,
+        gameOver: result.game_over,
         isLoading: false,
-        lastComputerAction: action.result.computer_action,
-        legalActions: action.result.legal_actions,
-        previousBoard: action.result.previous_board,
+        lastMove:
+          result.computer_action === null ||
+          result.computer_action === passAction
+            ? action.action
+            : result.computer_action,
+        legalActions: result.legal_actions,
+        previousBoard: result.previous_board,
       };
     }
     default: {
@@ -78,35 +89,45 @@ const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : "Unknown simulation error";
 
 export const useFlyGoGame = () => {
-  const [state, dispatch] = useReducer(reducer, undefined, initialState);
+  const [state, dispatch] = useReducer(
+    reducer,
+    DEFAULT_BOARD_SIZE,
+    initialState
+  );
 
   useEffect(() => {
     const controller = new AbortController();
-    const initializeBrain = async () => {
+    const warmUp = async () => {
       try {
-        const result = await simulatePosition(emptyBoard(), controller.signal);
-        dispatch({
-          activity: result.activity,
-          legalActions: result.legal_actions,
-          type: "brain-ready",
-        });
+        const result = await simulatePosition(
+          emptyBoard(DEFAULT_BOARD_SIZE),
+          DEFAULT_BOARD_SIZE,
+          controller.signal
+        );
+        if (!controller.signal.aborted) {
+          dispatch({
+            activity: activitiesOf(result.activity),
+            legalActions: result.legal_actions,
+            type: "brain-ready",
+          });
+        }
       } catch (error: unknown) {
         if (!controller.signal.aborted) {
           dispatch({ message: errorMessage(error), type: "failed" });
         }
       }
     };
-    void initializeBrain();
+    void warmUp();
     return () => controller.abort();
   }, []);
 
-  const reset = () => {
-    dispatch({ type: "reset" });
-    const loadBrain = async () => {
+  const start = (size: number) => {
+    dispatch({ size, type: "reset" });
+    const load = async () => {
       try {
-        const result = await simulatePosition(emptyBoard());
+        const result = await simulatePosition(emptyBoard(size), size);
         dispatch({
-          activity: result.activity,
+          activity: activitiesOf(result.activity),
           legalActions: result.legal_actions,
           type: "brain-ready",
         });
@@ -114,7 +135,7 @@ export const useFlyGoGame = () => {
         dispatch({ message: errorMessage(error), type: "failed" });
       }
     };
-    void loadBrain();
+    void load();
   };
 
   const play = async (action: number) => {
@@ -128,8 +149,9 @@ export const useFlyGoGame = () => {
         board: state.board,
         consecutivePasses: state.consecutivePasses,
         previousBoard: state.previousBoard,
+        size: state.size,
       });
-      dispatch({ result, type: "turn-complete" });
+      dispatch({ action, result, type: "turn-complete" });
     } catch (error: unknown) {
       dispatch({ message: errorMessage(error), type: "failed" });
     }
@@ -139,8 +161,21 @@ export const useFlyGoGame = () => {
   if (state.gameOver) {
     status = "Game over";
   } else if (state.isLoading) {
-    status = "FlyGo is thinking";
+    status = "Thinking";
+  }
+  if (state.error !== null) {
+    status = state.error;
   }
 
-  return { ...state, play, reset, status };
+  return {
+    ...state,
+    play,
+    reset: () => start(state.size),
+    selectSize: (size: number) => {
+      if (size !== state.size) {
+        start(size);
+      }
+    },
+    status,
+  };
 };

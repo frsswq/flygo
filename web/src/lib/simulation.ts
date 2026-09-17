@@ -1,8 +1,11 @@
 import { z } from "zod";
 
+import { MAX_BOARD_SIZE, MIN_BOARD_SIZE } from "@/lib/board";
 import type { Stone } from "@/lib/board";
 
 const stoneSchema = z.union([z.literal(-1), z.literal(0), z.literal(1)]);
+const sizeSchema = z.number().int().min(MIN_BOARD_SIZE).max(MAX_BOARD_SIZE);
+const actionSchema = z.number().int().min(0);
 
 const activeNeuronSchema = z.object({
   activity: z.number(),
@@ -13,21 +16,27 @@ const activeNeuronSchema = z.object({
 
 const simulationResponseSchema = z.object({
   activity: z.array(activeNeuronSchema),
-  legal_actions: z.array(z.number().int().min(0).max(25)),
+  legal_actions: z.array(actionSchema),
   model_status: z.string(),
-  recommended_action: z.number().int().min(0).max(25),
+  recommended_action: actionSchema,
+  size: sizeSchema,
   topology: z.string(),
 });
 
-const turnResponseSchema = z.object({
-  activity: z.array(activeNeuronSchema),
-  board: z.array(stoneSchema).length(25),
-  computer_action: z.number().int().min(0).max(25).nullable(),
-  consecutive_passes: z.number().int().min(0).max(2),
-  game_over: z.boolean(),
-  legal_actions: z.array(z.number().int().min(0).max(25)),
-  previous_board: z.array(stoneSchema).length(25).nullable(),
-});
+const turnResponseSchema = z
+  .object({
+    activity: z.array(activeNeuronSchema),
+    board: z.array(stoneSchema),
+    computer_action: actionSchema.nullable(),
+    consecutive_passes: z.number().int().min(0).max(2),
+    game_over: z.boolean(),
+    legal_actions: z.array(actionSchema),
+    previous_board: z.array(stoneSchema).nullable(),
+    size: sizeSchema,
+  })
+  .refine((value) => value.board.length === value.size * value.size, {
+    message: "Board length must match the board size",
+  });
 
 export type ActiveNeuron = z.infer<typeof activeNeuronSchema>;
 export type SimulationResponse = z.infer<typeof simulationResponseSchema>;
@@ -38,6 +47,7 @@ interface TurnRequest {
   board: readonly Stone[];
   consecutivePasses: number;
   previousBoard: readonly Stone[] | null;
+  size: number;
 }
 
 const parseResponse = async <Response>(
@@ -54,10 +64,11 @@ const parseResponse = async <Response>(
 
 export const simulatePosition = async (
   board: readonly Stone[],
+  size: number,
   signal?: AbortSignal
 ): Promise<SimulationResponse> => {
   const response = await fetch("/api/simulate", {
-    body: JSON.stringify({ board, to_play: 1 }),
+    body: JSON.stringify({ board, size, to_play: 1 }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
     signal,
@@ -70,6 +81,7 @@ export const playTurn = async ({
   board,
   consecutivePasses,
   previousBoard,
+  size,
 }: TurnRequest): Promise<TurnResponse> => {
   const response = await fetch("/api/play", {
     body: JSON.stringify({
@@ -77,6 +89,7 @@ export const playTurn = async ({
       board,
       consecutive_passes: consecutivePasses,
       previous_board: previousBoard,
+      size,
     }),
     headers: { "Content-Type": "application/json" },
     method: "POST",
