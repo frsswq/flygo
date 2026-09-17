@@ -33,8 +33,9 @@ Two conditions are missing:
 
 1. `farissaifuddin.com` is under a client hold at its registrar, so the domain does not resolve at all.
    RDAP reports that status, and only the registrar can lift it.
-2. The zone must sit in the same Cloudflare account as the Pages project, and a `gofly` record must point at `flygo.pages.dev`.
-   Both Cloudflare nameservers published for the domain answer `REFUSED`, which is what Cloudflare returns for a zone it does not host.
+2. A `gofly` record must point at `flygo.pages.dev`.
+   The registry currently publishes `dalary.ns.cloudflare.com` and `john.ns.cloudflare.com` for the domain, and both answer `REFUSED`, which is what Cloudflare returns for a zone it does not host.
+   A subdomain does not need the zone in the Cloudflare account that holds the Pages project, so the record can live with whichever provider hosts the DNS once the delegation works.
 
 The Pages API reports the second condition as `CNAME record not set`:
 
