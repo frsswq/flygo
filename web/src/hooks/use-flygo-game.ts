@@ -1,165 +1,159 @@
-import { useEffect, useReducer } from "react";
-import type { Dispatch } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { DEFAULT_BOARD_SIZE, emptyBoard } from "@/lib/go-rules";
-import type { Stone } from "@/lib/go-rules";
-import { playTurn, simulatePosition } from "@/lib/simulation";
-import type { ActiveNeuron, Score, TurnResponse } from "@/lib/simulation";
+import {
+  DEFAULT_BOARD_SIZE,
+  legalActions,
+  passActionFor,
+  replayMoves,
+  resultOf,
+  trailingPasses,
+} from "@/lib/go-rules";
+import type { Position } from "@/lib/go-rules";
+import {
+  activityOf,
+  chooseAction,
+  loadWebBundle,
+  logitsOf,
+} from "@/lib/policy";
+import type {
+  Dynamics,
+  GraphBundle,
+  PolicyBundle,
+  WebBundle,
+} from "@/lib/policy";
 
-interface GameState {
-  activity: number[];
-  board: Stone[];
-  error: string | null;
-  gameOver: boolean;
-  isLoading: boolean;
-  lastMove: number | null;
-  legalActions: number[];
-  moves: number[];
-  score: Score | null;
-  size: number;
-}
+const BUNDLE_URL = `${import.meta.env.BASE_URL}flygo/`;
 
-type GameAction =
-  | { type: "brain-ready"; activity: number[]; legalActions: number[] }
-  | { type: "failed"; message: string }
-  | { type: "reset"; size: number }
-  | { type: "thinking" }
-  | { type: "turn-complete"; action: number; result: TurnResponse };
-
-const activitiesOf = (neurons: ActiveNeuron[]): number[] =>
-  neurons.map((neuron) => neuron.activity);
-
-const initialState = (size: number): GameState => ({
-  activity: [],
-  board: emptyBoard(size),
-  error: null,
-  gameOver: false,
-  isLoading: true,
-  lastMove: null,
-  legalActions: [],
-  moves: [],
-  score: null,
-  size,
-});
-
-const reducer = (state: GameState, action: GameAction): GameState => {
-  switch (action.type) {
-    case "brain-ready": {
-      return {
-        ...state,
-        activity: action.activity,
-        isLoading: false,
-        legalActions: action.legalActions,
-      };
-    }
-    case "failed": {
-      return { ...state, error: action.message, isLoading: false };
-    }
-    case "reset": {
-      return initialState(action.size);
-    }
-    case "thinking": {
-      return { ...state, error: null, isLoading: true };
-    }
-    case "turn-complete": {
-      const { result } = action;
-      const passAction = result.size * result.size;
-      return {
-        ...state,
-        activity: activitiesOf(result.activity),
-        board: result.board,
-        gameOver: result.game_over,
-        isLoading: false,
-        lastMove:
-          result.computer_action === null ||
-          result.computer_action === passAction
-            ? action.action
-            : result.computer_action,
-        legalActions: result.legal_actions,
-        moves: result.moves,
-        score: result.score,
-      };
-    }
-    default: {
-      return state;
-    }
-  }
-};
-
-const errorMessage = (error: unknown): string =>
+const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : "Unknown simulation error";
 
-const load = async (
-  dispatch: Dispatch<GameAction>,
-  size: number,
-  signal?: AbortSignal
-) => {
-  try {
-    const result = await simulatePosition([], size, signal);
-    if (!signal?.aborted) {
-      dispatch({
-        activity: activitiesOf(result.activity),
-        legalActions: result.legal_actions,
-        type: "brain-ready",
-      });
-    }
-  } catch (error: unknown) {
-    if (!signal?.aborted) {
-      dispatch({ message: errorMessage(error), type: "failed" });
-    }
-  }
+const policyMove = (
+  graph: GraphBundle,
+  policy: PolicyBundle,
+  dynamics: Dynamics,
+  position: Position
+): { action: number; activity: Float32Array } => {
+  const activity = activityOf(graph, policy, dynamics, position);
+  return {
+    action: chooseAction(logitsOf(policy, activity), legalActions(position)),
+    activity,
+  };
 };
 
 export const useFlyGoGame = () => {
-  const [state, dispatch] = useReducer(
-    reducer,
-    DEFAULT_BOARD_SIZE,
-    initialState
+  const [size, setSize] = useState(DEFAULT_BOARD_SIZE);
+  const [moves, setMoves] = useState<number[]>([]);
+  const [lastMove, setLastMove] = useState<number | null>(null);
+  const [activity, setActivity] = useState<Float32Array>(
+    () => new Float32Array(0)
   );
+  const [loaded, setLoaded] = useState<{
+    bundle: WebBundle;
+    size: number;
+  } | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const bundle = loaded?.size === size ? loaded.bundle : null;
+  const policy = bundle?.policies.get(size);
+  const isLoading = bundle === null;
+  const position = useMemo(() => replayMoves(size, moves), [size, moves]);
+  const legal = useMemo(() => legalActions(position), [position]);
+  const result = useMemo(() => resultOf(position), [position]);
+  const gameOver = trailingPasses(moves, size) >= 2;
 
   useEffect(() => {
-    const controller = new AbortController();
-    void load(dispatch, DEFAULT_BOARD_SIZE, controller.signal);
-    return () => controller.abort();
-  }, []);
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const next = await loadWebBundle(BUNDLE_URL, size);
+        if (cancelled) {
+          return;
+        }
+        setLoaded({ bundle: next, size });
+        setActivity(
+          policyMove(
+            next.graph,
+            next.policies.get(size) as PolicyBundle,
+            next.dynamics,
+            replayMoves(size, [])
+          ).activity
+        );
+        setFailure(null);
+      } catch (error: unknown) {
+        if (!cancelled) {
+          setFailure(messageOf(error));
+        }
+      }
+    };
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [size]);
 
-  const start = (size: number) => {
-    dispatch({ size, type: "reset" });
-    void load(dispatch, size);
-  };
-
-  const play = async (action: number) => {
-    if (state.isLoading || state.gameOver) {
-      return;
-    }
-    dispatch({ type: "thinking" });
-    try {
-      const result = await playTurn([...state.moves, action], state.size);
-      dispatch({ action, result, type: "turn-complete" });
-    } catch (error: unknown) {
-      dispatch({ message: errorMessage(error), type: "failed" });
-    }
-  };
+  const play = useCallback(
+    (action: number) => {
+      if (!(bundle && policy) || gameOver) {
+        return;
+      }
+      const pass = passActionFor(size);
+      try {
+        const afterHuman = replayMoves(size, [...moves, action]);
+        const reading = policyMove(
+          bundle.graph,
+          policy,
+          bundle.dynamics,
+          afterHuman
+        );
+        const played =
+          trailingPasses([...moves, action], size) < 2
+            ? [action, reading.action]
+            : [action];
+        setMoves([...moves, ...played]);
+        setActivity(reading.activity);
+        setLastMove(
+          played.length === 1 || reading.action === pass
+            ? action
+            : reading.action
+        );
+      } catch (error: unknown) {
+        setFailure(messageOf(error));
+      }
+    },
+    [bundle, gameOver, moves, policy, size]
+  );
 
   let status = "Your turn";
-  if (state.gameOver) {
-    status = state.score?.label ?? "Game over";
-  } else if (state.isLoading) {
+  if (gameOver) {
+    status = result.label;
+  } else if (isLoading) {
     status = "Thinking";
   }
-  if (state.error !== null) {
-    status = state.error;
+  if (failure !== null) {
+    status = failure;
   }
 
   return {
-    ...state,
+    activity: [...activity],
+    board: position.board,
+    error: failure,
+    gameOver,
+    isLoading,
+    lastMove,
+    legalActions: legal,
     play,
-    reset: () => start(state.size),
-    selectSize: (size: number) => {
-      if (size !== state.size) {
-        start(size);
+    reset: () => {
+      setMoves([]);
+      setLastMove(null);
+    },
+    selectSize: (next: number) => {
+      if (next !== size) {
+        setSize(next);
+        setMoves([]);
+        setLastMove(null);
       }
     },
+    size,
     status,
   };
 };

@@ -22,19 +22,52 @@ cd web && npm ci
 
 ## Quick start
 
-Build and start the research viewer:
+Start the viewer:
 
 ```bash
-cd web && npm run build && cd ..
-uv run fastapi dev
+cd web && npm ci && npm run dev
 ```
 
-Open <http://127.0.0.1:8000>.
-The bundled visualization uses a small, deterministic subgraph derived from the official release.
+Open <http://127.0.0.1:5173>.
+The page loads a small, deterministic subgraph derived from the official release and runs it in the browser.
 You play Black, and FlyGo automatically applies a White response after each legal move.
 Two passes in a row end the game, and the status word then reports the area score.
 The ruleset is Tromp-Taylor with area scoring, positional superko, and komi 0.0 on 5x5 and 7.5 above.
 Its encoder and readout are intentionally untrained at this stage.
+
+## Deploy
+
+The site is static and all inference runs in the visitor's browser, so no server is required.
+Cloudflare serves files only, which is free and unmetered on the free plan.
+
+Reproduce the deployable artifact locally:
+
+```bash
+make static
+```
+
+That writes `web/dist/`, which is the directory to publish.
+It serves `/assets/*` (content hashed) and `/flygo/*` (the graph and one policy per board size, about 470 KB for 9x9).
+`web/public/_headers` sets the cache policy for both.
+
+Connect the repository once in the Cloudflare dashboard, then use these settings:
+
+| Setting | Value |
+| --- | --- |
+| Build command | `cd web && npm ci && npm run build` |
+| Output directory | `web/dist` |
+| Environment variable | `FLYGO_PUBLIC_BASE` = `/` |
+| Environment variable | `FLYGO_OUT_DIR` = `dist` |
+
+`FLYGO_PUBLIC_BASE` switches the built asset URLs from the FastAPI mount at `/static/` to the root.
+`FLYGO_OUT_DIR` keeps the deployable build out of the committed FastAPI build.
+Cloudflare Pages also accepts the same repository as a Workers project with `npx wrangler deploy`; the artifact is identical.
+
+Check the result with any static file server, for example:
+
+```bash
+python3 -m http.server 8099 --directory web/dist
+```
 
 ## Browser bundle
 
@@ -113,15 +146,21 @@ src/flygo/
 ├── connectome.py      # Frozen graph and lightweight dynamics
 ├── go.py              # Immutable Go rules, scoring, and features
 ├── model.py           # Trainable encoder/readout and controls
-├── api.py             # FastAPI research viewer
+├── conformance.py     # Generates the shared rules fixture
+├── export.py          # Writes the browser graph and policy binaries
+├── policy_fixture.py  # Generates the shared policy fixture
+├── api.py             # FastAPI research viewer and reference endpoints
 ├── assets/            # Small official derived subgraph for the viewer
-└── static/            # Generated Vite production build
+└── static/            # Generated Vite build for the FastAPI mount
 web/                    # React, Vite, Base UI shadcn, and Ultracite source
+├── public/flygo/      # Committed browser bundle, written by export-web
+└── src/lib/           # Rules engine, browser dynamics, and transport schemas
+shared/                 # Conformance fixtures replayed by both languages
 docs/
 ├── data-profile.json  # Generated facts about the downloaded release
 └── experiment.md      # Evaluation protocol
 data/                   # Ignored raw and processed artifacts
-tests/                  # Rules, simulation, and API tests
+tests/                  # Rules, conformance, simulation, and API tests
 ```
 
 Production Python code uses Polars instead of pandas.
@@ -129,14 +168,22 @@ PyArrow exists only as a compatibility boundary for one nullable dictionary colu
 
 ## Development
 
-Start the FastAPI and Vite development servers together:
+Start the viewer. It needs no backend, because the browser loads the exported graph and runs the policy itself:
 
 ```bash
 make dev
 ```
 
 Open <http://127.0.0.1:5173>.
-Stopping `make dev` also stops both child servers.
+
+Run the FastAPI research server, which serves the built app and the `/api` endpoints:
+
+```bash
+make build && make api
+```
+
+Open <http://127.0.0.1:8000>.
+The API is the Python reference for the same rules and dynamics, not a dependency of the viewer.
 
 Run all checks:
 
@@ -152,15 +199,15 @@ npm test
 npm run build
 ```
 
-For frontend development, run `uv run fastapi dev` and `npm run dev` from `web/` in separate terminals.
-Vite proxies `/api` requests to FastAPI on port 8000.
-The production build writes into `src/flygo/static/` for FastAPI to serve.
-
-Run the API in production mode:
+Or run every check at once:
 
 ```bash
-uv run fastapi run
+make check
 ```
+
+`make build` writes into `src/flygo/static/` for FastAPI to serve.
+`make static` writes the deployable build into `web/dist/`.
+Vite still proxies `/api` requests to port 8000 for API work.
 
 ## Data provenance
 
