@@ -31,6 +31,7 @@ uv run fastapi dev
 
 Open <http://127.0.0.1:8000>.
 The bundled visualization uses a small, deterministic subgraph derived from the official release.
+You play Black, and FlyGo automatically applies a White response after each legal move.
 Its encoder and readout are intentionally untrained at this stage.
 
 ## Official data

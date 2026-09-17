@@ -8,10 +8,12 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import { Spinner } from "@/components/ui/spinner";
 import type { ActiveNeuron } from "@/lib/simulation";
 import { cn } from "@/lib/utils";
 
 interface ActivityMapProps {
+  isLoading: boolean;
   neurons: readonly ActiveNeuron[];
 }
 
@@ -23,18 +25,22 @@ interface DotStyle extends CSSProperties {
 
 const GOLDEN_ANGLE = 2.399963;
 
-export const ActivityMap = ({ neurons }: ActivityMapProps) => (
+export const ActivityMap = ({ isLoading, neurons }: ActivityMapProps) => (
   <div className="activity-map bg-foreground relative min-h-80 overflow-hidden rounded-lg">
     {neurons.length === 0 ? (
       <div className="text-background [&_[data-slot=empty-description]]:text-background/60 absolute inset-0 flex">
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
-              <BrainCircuitIcon />
+              {isLoading ? <Spinner /> : <BrainCircuitIcon />}
             </EmptyMedia>
-            <EmptyTitle>No activity yet</EmptyTitle>
+            <EmptyTitle>
+              {isLoading ? "Waking the connectome" : "Activity unavailable"}
+            </EmptyTitle>
             <EmptyDescription>
-              Run the model to propagate this position through the connectome.
+              {isLoading
+                ? "Propagating the board through the frozen graph."
+                : "Start a new game to try the simulation again."}
             </EmptyDescription>
           </EmptyHeader>
         </Empty>
