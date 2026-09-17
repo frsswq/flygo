@@ -4,6 +4,11 @@ __pycache__/
 .ruff_cache/
 *.py[cod]
 .DS_Store
+# Local secrets and deployment tooling state
+.env
+.env.*
+.dev.vars
+.wrangler/
 
 # Official MaleCNS downloads and generated experiment artifacts
 data/raw/*
