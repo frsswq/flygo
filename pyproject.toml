@@ -1,7 +1,7 @@
 [project]
 name = "flygo"
 version = "0.1.0"
-description = "Test whether the official MaleCNS connectome can provide useful structure for learning 5x5 Go."
+description = "Test whether the official MaleCNS connectome can provide useful structure for learning Go on 5x5 through 9x9 boards."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
