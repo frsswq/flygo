@@ -1,4 +1,4 @@
-import { FlaskConicalIcon, TriangleAlertIcon } from "lucide-react";
+import { TriangleAlertIcon } from "lucide-react";
 
 import { ActivityMap } from "@/components/activity-map";
 import { GoBoard } from "@/components/go-board";
@@ -32,23 +32,7 @@ const App = () => {
   } = useFlyGoGame();
 
   return (
-    <main className="mx-auto flex min-h-svh max-w-7xl flex-col justify-center gap-8 px-5 py-8 lg:px-8">
-      <section className="grid items-end gap-5 lg:grid-cols-[0.7fr_1.3fr]">
-        <div>
-          <p className="text-signal font-mono text-xs tracking-wide uppercase">
-            Human Black · FlyGo White
-          </p>
-          <h1 className="mt-2 text-4xl leading-none font-semibold tracking-tighter sm:text-5xl">
-            Play the fly brain.
-          </h1>
-        </div>
-        <p className="text-muted-foreground max-w-2xl text-base leading-7">
-          Place a Black stone. The frozen MaleCNS graph activates and answers
-          automatically as White. Its policy is an untrained research
-          demonstration.
-        </p>
-      </section>
-
+    <main className="mx-auto flex min-h-svh max-w-7xl flex-col justify-center px-5 py-8 lg:px-8">
       <section className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
         <Card className="[--card-spacing:--spacing(6)]">
           <CardHeader>
@@ -123,15 +107,6 @@ const App = () => {
           </CardFooter>
         </Card>
       </section>
-
-      <Alert>
-        <FlaskConicalIcon />
-        <AlertTitle>Scientific boundary</AlertTitle>
-        <AlertDescription>
-          The wiring comes from Janelia. The game encoding and activity dynamics
-          are FlyGo experiments, not measured biological behavior.
-        </AlertDescription>
-      </Alert>
     </main>
   );
 };
