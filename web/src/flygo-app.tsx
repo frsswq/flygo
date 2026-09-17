@@ -35,10 +35,10 @@ const App = () => {
         size={size}
       />
 
-      <div className="flex w-full max-w-lg items-center justify-between gap-3">
+      <div className="grid w-full max-w-lg grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-3">
         <select
           aria-label="Board size"
-          className="border-input bg-background h-8 rounded-md border px-2 text-sm"
+          className="border-input bg-background h-8 justify-self-start rounded-md border px-2 text-sm"
           onChange={(event) => selectSize(Number(event.target.value))}
           value={size}
         >
@@ -53,14 +53,14 @@ const App = () => {
 
         <p
           aria-live="polite"
-          className={cn("text-muted-foreground truncate text-sm", {
+          className={cn("text-muted-foreground truncate text-center text-sm", {
             "text-destructive": error !== null,
           })}
         >
           {status}
         </p>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-self-end">
           <Button onClick={reset} size="sm" type="button" variant="ghost">
             New
           </Button>
