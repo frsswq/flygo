@@ -20,6 +20,9 @@ data/processed/*
 artifacts/
 runs/
 
+# Vite copies web/public into the build output, so this copy is generated
+src/flygo/static/flygo/
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db

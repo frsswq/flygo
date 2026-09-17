@@ -36,6 +36,29 @@ Two passes in a row end the game, and the status word then reports the area scor
 The ruleset is Tromp-Taylor with area scoring, positional superko, and komi 0.0 on 5x5 and 7.5 above.
 Its encoder and readout are intentionally untrained at this stage.
 
+## Browser bundle
+
+The viewer runs the frozen graph in the browser, so the exported binaries are committed under `web/public/flygo/`:
+
+```bash
+uv run flygo export-web
+```
+
+The command writes `graph.bin`, one `policy-{size}.bin` per board size, and a manifest.
+The manifest records the byte layout, the dynamics constants, and a SHA-256 for every file.
+`src/flygo/export.py` documents each byte offset.
+
+Both rule engines and the dynamics are checked against shared fixtures:
+
+```bash
+uv run flygo conformance
+uv run flygo policy-conformance
+```
+
+`shared/rules-conformance.json` is replayed by `tests/test_conformance.py` and by `web/src/lib/go-rules.test.ts`.
+`shared/policy-conformance.json` is replayed by `web/src/lib/policy.test.ts`, which also verifies the recorded hashes.
+Regenerate a fixture after changing either engine, and never edit a fixture by hand.
+
 ## Official data
 
 Download and verify the three official files:

@@ -7,7 +7,9 @@ import json
 from pathlib import Path
 
 from flygo.conformance import DEFAULT_CONFORMANCE, write_conformance
+from flygo.export import DEFAULT_BUNDLE, estimate_bundle, write_web_bundle
 from flygo.official_data import download_official_files, prepare_traced_graph, write_profile
+from flygo.policy_fixture import DEFAULT_POLICY_CONFORMANCE, write_policy_conformance
 
 DEFAULT_RAW = Path("data/raw")
 DEFAULT_GRAPH = Path("data/processed/malecns-traced-w5.parquet")
@@ -35,6 +37,15 @@ def parser() -> argparse.ArgumentParser:
         help="Regenerate the shared rules conformance fixture",
     )
     conformance.add_argument("--output", type=Path, default=DEFAULT_CONFORMANCE)
+
+    export = commands.add_parser("export-web", help="Write the browser graph and policy bundle")
+    export.add_argument("--output", type=Path, default=DEFAULT_BUNDLE)
+
+    policy_fixture = commands.add_parser(
+        "policy-conformance",
+        help="Regenerate the shared browser policy fixture",
+    )
+    policy_fixture.add_argument("--output", type=Path, default=DEFAULT_POLICY_CONFORMANCE)
     return root
 
 
@@ -61,6 +72,15 @@ def main() -> None:
         print(
             f"{arguments.output}: {len(fixture['cases'])} cases, {len(fixture['illegal'])} illegal"
         )
+    elif arguments.command == "export-web":
+        manifest = write_web_bundle(arguments.output)
+        sizes = estimate_bundle(arguments.output)
+        print(
+            f"{arguments.output}: {manifest['graph']['node_count']} neurons, {sizes['total']} bytes"
+        )
+    elif arguments.command == "policy-conformance":
+        fixture = write_policy_conformance(arguments.output)
+        print(f"{arguments.output}: {len(fixture['cases'])} cases")
 
 
 if __name__ == "__main__":
