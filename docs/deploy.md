@@ -12,6 +12,20 @@ make static
 That writes `web/dist/`, the directory to publish.
 It serves `/assets/*` (content hashed) and `/flygo/*` (the graph and one policy per board size).
 `web/public/_headers` sets the cache policy for both.
+That writes `web/dist/`, the directory to publish.
+It serves `/assets/*` (content hashed) and `/flygo/*` (the graph and one policy per board size).
+`web/public/_headers` sets the cache policy for both.
+
+Publish that directory with `wrangler`:
+
+```bash
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
+  npx wrangler@4 pages deploy web/dist --project-name flygo --branch main
+```
+
+The project `flygo` serves the production branch `main` at <https://flygo.pages.dev>.
+The command prints the URL of each deployment, including the immutable preview URL for that build.
+Keep the token outside the repository, for example in `~/.config/.wrangler/cf-api-token`.
 
 ## Cloudflare settings
 

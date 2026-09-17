@@ -24,8 +24,8 @@ make dev
 ```
 
 Open <http://127.0.0.1:5173>.
-You play Black, and the frozen graph answers as White after each legal move.
-Two passes in a row end the game, and the status word then reports the area score.
+You play Black, and the frozen graph answers as White after each stone you place.
+Passing also passes for White, so two consecutive passes end the game and the status word reports the area score.
 The ruleset is Tromp-Taylor with area scoring, positional superko, and komi 0.0 on 5x5 and 7.5 above.
 The encoder and readout are intentionally untrained, so the play is weak.
 

@@ -64,6 +64,11 @@ Komi is 7.5 on 6x6 through 9x9, which is the value Chinese rules use on 9x9.
 Change `KOMI_BY_SIZE` in `src/flygo/go.py` to test another komi.
 The 6x6 entry is untuned and may favour White, because published komi estimates for 6x6 are near 3.
 The server replays the full action list of a game on every request, so superko covers the whole game instead of the previous position only.
+The server replays the full action list of a game on every request, so superko covers the whole game instead of the previous position only.
+The viewer keeps the rules engine unchanged and decides only when White answers.
+White answers every stone that Black places.
+When Black passes, White passes back, because the untrained readout ranks the pass action near last on 9x9 and the score would otherwise be unreachable.
+The two consecutive passes then end the game.
 
 ## Metrics
 

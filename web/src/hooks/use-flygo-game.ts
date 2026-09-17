@@ -40,6 +40,13 @@ const policyMove = (
   };
 };
 
+const readingOf = (
+  bundle: WebBundle,
+  policy: PolicyBundle,
+  size: number
+): { action: number; activity: Float32Array } =>
+  policyMove(bundle.graph, policy, bundle.dynamics, replayMoves(size, []));
+
 export const useFlyGoGame = () => {
   const [size, setSize] = useState(DEFAULT_BOARD_SIZE);
   const [moves, setMoves] = useState<number[]>([]);
@@ -71,12 +78,8 @@ export const useFlyGoGame = () => {
         }
         setLoaded({ bundle: next, size });
         setActivity(
-          policyMove(
-            next.graph,
-            next.policies.get(size) as PolicyBundle,
-            next.dynamics,
-            replayMoves(size, [])
-          ).activity
+          readingOf(next, next.policies.get(size) as PolicyBundle, size)
+            .activity
         );
         setFailure(null);
       } catch (error: unknown) {
@@ -97,6 +100,7 @@ export const useFlyGoGame = () => {
         return;
       }
       const pass = passActionFor(size);
+      const passing = action === pass;
       try {
         const afterHuman = replayMoves(size, [...moves, action]);
         const reading = policyMove(
@@ -105,17 +109,15 @@ export const useFlyGoGame = () => {
           bundle.dynamics,
           afterHuman
         );
-        const played =
-          trailingPasses([...moves, action], size) < 2
-            ? [action, reading.action]
-            : [action];
+        // White passes back after a human pass, because the untrained readout
+        // ranks the pass action last. The two consecutive passes then end the
+        // game, and the status word reports the area score.
+        const played = passing ? [action, pass] : [action, reading.action];
         setMoves([...moves, ...played]);
         setActivity(reading.activity);
-        setLastMove(
-          played.length === 1 || reading.action === pass
-            ? action
-            : reading.action
-        );
+        if (!passing) {
+          setLastMove(reading.action === pass ? action : reading.action);
+        }
       } catch (error: unknown) {
         setFailure(messageOf(error));
       }
@@ -145,6 +147,9 @@ export const useFlyGoGame = () => {
     reset: () => {
       setMoves([]);
       setLastMove(null);
+      if (bundle && policy) {
+        setActivity(readingOf(bundle, policy, size).activity);
+      }
     },
     selectSize: (next: number) => {
       if (next !== size) {
