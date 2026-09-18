@@ -15,6 +15,7 @@ import {
   parseGraph,
   parseManifest,
   parsePolicy,
+  valueOf,
 } from "@/lib/policy";
 
 const fixtureSchema = z.object({
@@ -26,6 +27,7 @@ const fixtureSchema = z.object({
       moves: z.array(z.number().int()),
       name: z.string(),
       size: z.number().int(),
+      value: z.number(),
     })
   ),
   edge_count: z.number().int(),
@@ -119,6 +121,7 @@ describe("browser policy conformance with the Python engine", () => {
         fixture.steps
       );
       const logits = logitsOf(policy, activity);
+      const value = valueOf(policy, activity);
 
       expect(activity).toHaveLength(testCase.activity.length);
       expect(logits).toHaveLength(testCase.logits.length);
@@ -133,6 +136,7 @@ describe("browser policy conformance with the Python engine", () => {
       expect(chooseAction(logits, legalActions(position))).toBe(
         testCase.chosen_action
       );
+      expect(Math.abs(value - testCase.value)).toBeLessThan(1e-5);
     }
 
     // Measured maximum differences against the Python engine are 4.3e-7 and

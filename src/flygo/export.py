@@ -16,7 +16,7 @@ Binary layouts (all integers little endian, all floats IEEE 754 binary32):
     uint32 magic "FLYP", uint32 version, uint32 size, uint32 node_count,
     uint32 feature_count, uint32 action_count,
     float32[node_count * feature_count] encoder,
-    float32[action_count * node_count] readout.
+    float32[action_count * node_count] readout, float32[node_count] value_readout.
 """
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ MANIFEST_FILE = "manifest.json"
 GRAPH_MAGIC = int.from_bytes(b"FLYG", "little")
 POLICY_MAGIC = int.from_bytes(b"FLYP", "little")
 GRAPH_VERSION = 1
-POLICY_VERSION = 1
+POLICY_VERSION = 2
 POLICY_SEED = 7
 DEFAULT_STEPS = 8
 
@@ -87,6 +87,8 @@ def _policy_bytes(policy: ConnectomePolicy) -> bytes:
         raise ValueError("Encoder shape does not match the manifest header")
     if policy.readout.shape != (header.action_count, header.node_count):
         raise ValueError("Readout shape does not match the manifest header")
+    if policy.value_readout.shape != (header.node_count,):
+        raise ValueError("Value readout shape does not match the manifest header")
     chunks = [
         struct.pack(
             "<IIIIII",
@@ -99,6 +101,7 @@ def _policy_bytes(policy: ConnectomePolicy) -> bytes:
         ),
         policy.encoder.astype("<f4", copy=False).tobytes(),
         policy.readout.astype("<f4", copy=False).tobytes(),
+        policy.value_readout.astype("<f4", copy=False).tobytes(),
     ]
     return b"".join(chunks)
 
@@ -114,12 +117,20 @@ def write_web_bundle(
     output: Path = DEFAULT_BUNDLE,
     *,
     steps: int = DEFAULT_STEPS,
+    policy_checkpoint: Path | None = None,
 ) -> dict[str, Any]:
     """Write the browser binaries and manifest, and return the manifest."""
     from flygo.connectome import load_connectome
 
     connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
     policies = build_policies(connectome)
+    checkpoint_metadata: dict[str, Any] | None = None
+    if policy_checkpoint is not None:
+        from flygo.training import load_policy
+
+        trained_policy, checkpoint_metadata = load_policy(policy_checkpoint, connectome)
+        policies[trained_policy.size] = trained_policy
+        steps = int(checkpoint_metadata["steps"])
     output.mkdir(parents=True, exist_ok=True)
 
     graph_path = output / GRAPH_FILE
@@ -137,6 +148,7 @@ def write_web_bundle(
                 "feature_count": policy.encoder.shape[1],
                 "action_count": policy.readout.shape[0],
                 "sha256": _sha256(path),
+                "trained": checkpoint_metadata is not None and size == checkpoint_metadata["size"],
             }
         )
 
@@ -155,7 +167,12 @@ def write_web_bundle(
             "retention": 0.35,
             "steps": steps,
         },
-        "model_status": "Untrained random encoder and readout",
+        "model_status": (
+            "Trained policy-value checkpoint"
+            if checkpoint_metadata is not None
+            else "Untrained random encoder and readout"
+        ),
+        "checkpoint": checkpoint_metadata,
         "policies": policy_entries,
         "ruleset": RULESET,
         "source": "Official MaleCNS v1.0 derived sensory-path sample",

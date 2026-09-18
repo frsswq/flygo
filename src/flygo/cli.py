@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from flygo.conformance import DEFAULT_CONFORMANCE, write_conformance
-from flygo.export import DEFAULT_BUNDLE, estimate_bundle, write_web_bundle
+from flygo.export import ASSET_DIRECTORY, DEFAULT_BUNDLE, estimate_bundle, write_web_bundle
 from flygo.official_data import download_official_files, prepare_traced_graph, write_profile
 from flygo.policy_fixture import DEFAULT_POLICY_CONFORMANCE, write_policy_conformance
 
@@ -68,6 +68,15 @@ def parser() -> argparse.ArgumentParser:
         default="black",
         help="The reportAnalysisWinratesAs value used by KataGo",
     )
+    train = commands.add_parser("train", help="Train a frozen-connectome policy-value model")
+    train.add_argument("--dataset", type=Path, required=True)
+    train.add_argument("--output", type=Path, required=True)
+    train.add_argument("--size", type=int, default=19)
+    train.add_argument("--epochs", type=int, default=10)
+    train.add_argument("--batch-size", type=int, default=128)
+    train.add_argument("--learning-rate", type=float, default=1e-3)
+    train.add_argument("--steps", type=int, default=8)
+    train.add_argument("--seed", type=int, default=7)
 
     conformance = commands.add_parser(
         "conformance",
@@ -77,6 +86,7 @@ def parser() -> argparse.ArgumentParser:
 
     export = commands.add_parser("export-web", help="Write the browser graph and policy bundle")
     export.add_argument("--output", type=Path, default=DEFAULT_BUNDLE)
+    export.add_argument("--policy", type=Path)
 
     policy_fixture = commands.add_parser(
         "policy-conformance",
@@ -138,13 +148,50 @@ def main() -> None:
             winrate_perspective=arguments.winrate_perspective,
         )
         print(f"{arguments.output}: {count} targets")
+    elif arguments.command == "train":
+        import hashlib
+        from dataclasses import asdict
+
+        from flygo.connectome import load_connectome
+        from flygo.training import load_training_data, save_policy, train_policy_value
+
+        connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
+        training = load_training_data(arguments.dataset / "train.npz", size=arguments.size)
+        validation = load_training_data(arguments.dataset / "validation.npz", size=arguments.size)
+        policy, history = train_policy_value(
+            connectome,
+            training,
+            size=arguments.size,
+            validation=validation,
+            epochs=arguments.epochs,
+            batch_size=arguments.batch_size,
+            learning_rate=arguments.learning_rate,
+            steps=arguments.steps,
+            seed=arguments.seed,
+        )
+        dataset_manifest = arguments.dataset / "manifest.json"
+        metadata = {
+            "dataset_sha256": hashlib.sha256(dataset_manifest.read_bytes()).hexdigest(),
+            "epochs": arguments.epochs,
+            "batch_size": arguments.batch_size,
+            "learning_rate": arguments.learning_rate,
+            "seed": arguments.seed,
+            "history": [asdict(epoch) for epoch in history],
+        }
+        save_policy(arguments.output, policy, steps=arguments.steps, metadata=metadata)
+        final = history[-1]
+        print(
+            f"{arguments.output}: {len(history)} epochs, "
+            f"validation policy={final.validation_policy_loss}, "
+            f"value={final.validation_value_loss}"
+        )
     elif arguments.command == "conformance":
         fixture = write_conformance(arguments.output)
         print(
             f"{arguments.output}: {len(fixture['cases'])} cases, {len(fixture['illegal'])} illegal"
         )
     elif arguments.command == "export-web":
-        manifest = write_web_bundle(arguments.output)
+        manifest = write_web_bundle(arguments.output, policy_checkpoint=arguments.policy)
         sizes = estimate_bundle(arguments.output)
         print(
             f"{arguments.output}: {manifest['graph']['node_count']} neurons, {sizes['total']} bytes"

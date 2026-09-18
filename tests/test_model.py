@@ -3,6 +3,7 @@ import polars as pl
 import pytest
 
 from flygo.connectome import from_frame
+from flygo.go import Position
 from flygo.model import ConnectomePolicy
 
 
@@ -28,3 +29,12 @@ def test_fit_readout_requires_one_label_per_activity() -> None:
 
     with pytest.raises(ValueError, match="one action for each activity row"):
         model.fit_readout(activities, labels)
+
+
+def test_evaluate_returns_policy_logits_and_bounded_value() -> None:
+    model = policy()
+
+    logits, value = model.evaluate(Position.empty(5))
+
+    assert logits.shape == (26,)
+    assert -1 <= value <= 1

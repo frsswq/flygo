@@ -14,6 +14,7 @@
     "steps": 8
   },
   "model_status": "Untrained random encoder and readout",
+  "checkpoint": null,
   "policies": [
     {
       "size": 5,
@@ -21,7 +22,8 @@
       "seed": 7,
       "feature_count": 51,
       "action_count": 26,
-      "sha256": "7af33567bbbbe3480b60bd09f75b6546144e8beb9d11d760472d798a9c280325"
+      "sha256": "82961c56e6ca17ad61eff8f5d1dbe7fbdd13126b04b7f6187dc8c05a805f0808",
+      "trained": false
     },
     {
       "size": 19,
@@ -29,7 +31,8 @@
       "seed": 7,
       "feature_count": 723,
       "action_count": 362,
-      "sha256": "a126e5e6ebc7d5c97f0daf96daeb4baa0db68c9cece50b75b6bc2928ae3b064b"
+      "sha256": "b4316d9cf26afef37557c2032ad083acb9a66925be91f8af715a7fc7c06c73e7",
+      "trained": false
     }
   ],
   "ruleset": "Tromp-Taylor, area scoring, positional superko",

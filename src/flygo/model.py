@@ -19,6 +19,7 @@ class ConnectomePolicy:
     connectome: FrozenConnectome
     encoder: NDArray[np.float32]
     readout: NDArray[np.float32]
+    value_readout: NDArray[np.float32]
     size: int = DEFAULT_BOARD_SIZE
 
     @classmethod
@@ -33,10 +34,12 @@ class ConnectomePolicy:
         feature_count = 2 * size * size + 1
         encoder = generator.normal(0, 0.15, (connectome.node_count, feature_count))
         readout = generator.normal(0, 0.05, (size * size + 1, connectome.node_count))
+        value_readout = generator.normal(0, 0.05, connectome.node_count)
         return cls(
             connectome,
             encoder.astype(np.float32),
             readout.astype(np.float32),
+            value_readout.astype(np.float32),
             size,
         )
 
@@ -52,6 +55,13 @@ class ConnectomePolicy:
 
     def logits(self, position: Position) -> NDArray[np.float32]:
         return self.readout @ self.activity(position)
+
+    def evaluate(self, position: Position) -> tuple[NDArray[np.float32], float]:
+        """Return policy logits and value from the current player's perspective."""
+        activity = self.activity(position)
+        logits = self.readout @ activity
+        value = float(np.tanh(self.value_readout @ activity))
+        return logits, value
 
     def choose_legal_action(self, position: Position) -> int:
         logits = self.logits(position)

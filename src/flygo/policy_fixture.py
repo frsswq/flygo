@@ -1,8 +1,8 @@
 """Policy conformance fixture for the browser dynamics.
 
 The TypeScript dynamics must reproduce the Python dynamics, so this module
-records the activity and logits of the exported policy on a set of positions.
-The exported binaries hold the same encoder and readout, and the fixture records
+records the activity, policy logits, and value of the exported policy on a set
+of positions. The exported binaries hold the same encoder and readouts, and the fixture records
 their SHA-256 so the browser test can prove it loaded the same weights.
 """
 
@@ -86,6 +86,7 @@ def build_policy_conformance(
                     "moves": moves,
                     "name": f"{size}x{size} after {len(moves)} moves",
                     "size": size,
+                    "value": round(float(np.tanh(policy.value_readout @ activity)), DIGITS),
                 }
             )
 

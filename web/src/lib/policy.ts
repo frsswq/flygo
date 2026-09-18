@@ -13,7 +13,8 @@ import { pointsFor } from "@/lib/go-rules";
 
 const GRAPH_MAGIC = 0x47_59_4c_46;
 const POLICY_MAGIC = 0x50_59_4c_46;
-const BUNDLE_VERSION = 1;
+const GRAPH_VERSION = 1;
+const POLICY_VERSION = 2;
 
 const manifestSchema = z.object({
   dynamics: z.object({
@@ -57,6 +58,7 @@ export interface PolicyBundle {
   readonly featureCount: number;
   readonly readout: Float32Array;
   readonly size: number;
+  readonly valueReadout: Float32Array;
 }
 
 export interface Dynamics {
@@ -88,7 +90,7 @@ export const parseGraph = (buffer: ArrayBuffer): GraphBundle => {
   if (magic !== GRAPH_MAGIC) {
     throw new RangeError("Graph bundle has an unknown magic number");
   }
-  if (version !== BUNDLE_VERSION) {
+  if (version !== GRAPH_VERSION) {
     throw new RangeError(`Graph bundle version ${version} is not supported`);
   }
   const nodeCount = view.getUint32(8, true);
@@ -127,7 +129,7 @@ export const parsePolicy = (buffer: ArrayBuffer): PolicyBundle => {
   if (magic !== POLICY_MAGIC) {
     throw new RangeError("Policy bundle has an unknown magic number");
   }
-  if (version !== BUNDLE_VERSION) {
+  if (version !== POLICY_VERSION) {
     throw new RangeError(`Policy bundle version ${version} is not supported`);
   }
   const size = view.getUint32(8, true);
@@ -135,7 +137,10 @@ export const parsePolicy = (buffer: ArrayBuffer): PolicyBundle => {
   const featureCount = view.getUint32(16, true);
   const actionCount = view.getUint32(20, true);
   const expected =
-    24 + nodeCount * featureCount * 4 + actionCount * nodeCount * 4;
+    24 +
+    nodeCount * featureCount * 4 +
+    actionCount * nodeCount * 4 +
+    nodeCount * 4;
   if (buffer.byteLength !== expected) {
     throw new RangeError(
       `Policy bundle holds ${buffer.byteLength} bytes, expected ${expected}`
@@ -147,7 +152,12 @@ export const parsePolicy = (buffer: ArrayBuffer): PolicyBundle => {
     24 + nodeCount * featureCount * 4,
     actionCount * nodeCount
   );
-  return { actionCount, encoder, featureCount, readout, size };
+  const valueReadout = new Float32Array(
+    buffer,
+    24 + nodeCount * featureCount * 4 + actionCount * nodeCount * 4,
+    nodeCount
+  );
+  return { actionCount, encoder, featureCount, readout, size, valueReadout };
 };
 
 export const parseManifest = (payload: unknown): Manifest =>
@@ -265,6 +275,18 @@ export const logitsOf = (
   }
   return logits;
 };
+/** Evaluate the position from the current player's perspective. */
+export const valueOf = (
+  policy: PolicyBundle,
+  activity: Float32Array
+): number => {
+  let sum = 0;
+  for (let node = 0; node < activity.length; node += 1) {
+    sum += policy.valueReadout[node] * activity[node];
+  }
+  return Math.tanh(sum);
+};
+
 /** Pick the strongest legal action, keeping the first of any tie. */
 export const chooseAction = (
   logits: Float32Array,

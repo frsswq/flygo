@@ -495,7 +495,8 @@
       ],
       "moves": [],
       "name": "5x5 after 0 moves",
-      "size": 5
+      "size": 5,
+      "value": 0.6967811
     },
     {
       "activity": [
@@ -998,7 +999,8 @@
         5
       ],
       "name": "5x5 after 5 moves",
-      "size": 5
+      "size": 5,
+      "value": -0.83043516
     },
     {
       "activity": [
@@ -1510,7 +1512,8 @@
         22
       ],
       "name": "5x5 after 14 moves",
-      "size": 5
+      "size": 5,
+      "value": -0.20284939
     },
     {
       "activity": [
@@ -2033,7 +2036,8 @@
         10
       ],
       "name": "5x5 after 25 moves",
-      "size": 5
+      "size": 5,
+      "value": -0.45409977
     },
     {
       "activity": [
@@ -2866,7 +2870,8 @@
       ],
       "moves": [],
       "name": "19x19 after 0 moves",
-      "size": 19
+      "size": 19,
+      "value": 0.16642912
     },
     {
       "activity": [
@@ -3705,7 +3710,8 @@
         295
       ],
       "name": "19x19 after 5 moves",
-      "size": 19
+      "size": 19,
+      "value": -0.40474111
     },
     {
       "activity": [
@@ -4553,7 +4559,8 @@
         359
       ],
       "name": "19x19 after 14 moves",
-      "size": 19
+      "size": 19,
+      "value": -0.51891297
     },
     {
       "activity": [
@@ -5412,7 +5419,8 @@
         171
       ],
       "name": "19x19 after 25 moves",
-      "size": 19
+      "size": 19,
+      "value": 0.35734946
     }
   ],
   "edge_count": 605,
@@ -5421,11 +5429,11 @@
   "policies": {
     "5": {
       "seed": 7,
-      "sha256": "7af33567bbbbe3480b60bd09f75b6546144e8beb9d11d760472d798a9c280325"
+      "sha256": "82961c56e6ca17ad61eff8f5d1dbe7fbdd13126b04b7f6187dc8c05a805f0808"
     },
     "19": {
       "seed": 7,
-      "sha256": "a126e5e6ebc7d5c97f0daf96daeb4baa0db68c9cece50b75b6bc2928ae3b064b"
+      "sha256": "b4316d9cf26afef37557c2032ad083acb9a66925be91f8af715a7fc7c06c73e7"
     }
   },
   "steps": 8
