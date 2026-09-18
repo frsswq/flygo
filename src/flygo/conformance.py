@@ -169,7 +169,7 @@ def build_conformance() -> dict[str, Any]:
                 _case(f"random {size}x{size} game of {len(moves)} moves", size, moves=moves)
             )
 
-    for size in (5, 9):
+    for size in (5,):
         moves = _filling_moves(size)
         cases.append(_case(f"filled {size}x{size} board", size, moves=moves))
 

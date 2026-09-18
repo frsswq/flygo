@@ -16,8 +16,6 @@ from flygo.connectome import FloatArray, from_frame
 from flygo.go import (
     BOARD_SIZES,
     DEFAULT_BOARD_SIZE,
-    MAX_BOARD_SIZE,
-    MIN_BOARD_SIZE,
     RULESET,
     Position,
 )
@@ -28,7 +26,7 @@ ASSET_DIRECTORY = PACKAGE_DIRECTORY / "assets"
 STATIC_DIRECTORY = PACKAGE_DIRECTORY / "static"
 TOPOLOGY_DESCRIPTION = "Official MaleCNS v1.0 derived sensory-path sample (461 neurons, 605 edges)"
 MODEL_STATUS = "Untrained encoder/readout demonstration"
-BOARD_SIZE_FIELD = Field(default=DEFAULT_BOARD_SIZE, ge=MIN_BOARD_SIZE, le=MAX_BOARD_SIZE)
+BOARD_SIZE_FIELD = Field(default=DEFAULT_BOARD_SIZE)
 
 _edges = pl.read_parquet(ASSET_DIRECTORY / "malecns-sample.parquet")
 _neurons = pl.read_parquet(ASSET_DIRECTORY / "malecns-sample-neurons.parquet")
@@ -56,6 +54,8 @@ class MoveSequence(BaseModel):
 
     @model_validator(mode="after")
     def check_moves(self) -> Self:
+        if self.size not in BOARD_SIZES:
+            raise ValueError(f"Board size must be one of {BOARD_SIZES}")
         pass_action = self.size * self.size
         if any(not 0 <= action <= pass_action for action in self.moves):
             raise ValueError("Every action must be a board point or pass")

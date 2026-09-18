@@ -81,7 +81,7 @@ def test_fixture_covers_the_hard_rules() -> None:
         illegal["self capture that repeats the board"]
         == "That move repeats an earlier board position"
     )
-    assert len(fixture["cases"]) >= 25
+    assert len(fixture["cases"]) >= 14
 
 
 def test_board_encoding_round_trips() -> None:

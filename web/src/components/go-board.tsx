@@ -41,19 +41,16 @@ const RIM_RATIO = 0.3;
 const ACTIVITY_HEIGHT = 24;
 const HOSHI: Readonly<Record<number, readonly (readonly [number, number])[]>> =
   {
-    7: [
-      [2, 2],
-      [2, 4],
+    19: [
       [3, 3],
-      [4, 2],
-      [4, 4],
-    ],
-    9: [
-      [2, 2],
-      [2, 6],
-      [4, 4],
-      [6, 2],
-      [6, 6],
+      [3, 9],
+      [3, 15],
+      [9, 3],
+      [9, 9],
+      [9, 15],
+      [15, 3],
+      [15, 9],
+      [15, 15],
     ],
   };
 

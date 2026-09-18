@@ -24,36 +24,12 @@
       "sha256": "7af33567bbbbe3480b60bd09f75b6546144e8beb9d11d760472d798a9c280325"
     },
     {
-      "size": 6,
-      "file": "policy-6.bin",
+      "size": 19,
+      "file": "policy-19.bin",
       "seed": 7,
-      "feature_count": 73,
-      "action_count": 37,
-      "sha256": "467479673141d91a62f7de3ddf00c80c0e7032f73c8877cb36636a3207d6d9fa"
-    },
-    {
-      "size": 7,
-      "file": "policy-7.bin",
-      "seed": 7,
-      "feature_count": 99,
-      "action_count": 50,
-      "sha256": "0adc70401ea3ef3bf72d085d4d4f9ce10213569017b1eacdbe68c12ad85edbdf"
-    },
-    {
-      "size": 8,
-      "file": "policy-8.bin",
-      "seed": 7,
-      "feature_count": 129,
-      "action_count": 65,
-      "sha256": "c31065ecd1c8f19d386a3a1d0bf4ee6c268ba9bf374d675306d3916ce9d200a5"
-    },
-    {
-      "size": 9,
-      "file": "policy-9.bin",
-      "seed": 7,
-      "feature_count": 163,
-      "action_count": 82,
-      "sha256": "fac9351473c40fe221a5f4a24a2da9cd0a220cfe01120997252b5d0fe91ddc20"
+      "feature_count": 723,
+      "action_count": 362,
+      "sha256": "a126e5e6ebc7d5c97f0daf96daeb4baa0db68c9cece50b75b6bc2928ae3b064b"
     }
   ],
   "ruleset": "Tromp-Taylor, area scoring, positional superko",

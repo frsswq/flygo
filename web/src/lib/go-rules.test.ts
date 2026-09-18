@@ -136,15 +136,15 @@ describe("Go rules", () => {
     expect(passActionFor(size)).toBe(pointsFor(size));
   });
 
-  it("starts a new game on a nine by nine board", () => {
-    expect(DEFAULT_BOARD_SIZE).toBe(9);
-    expect(emptyBoard(DEFAULT_BOARD_SIZE)).toHaveLength(81);
+  it("starts a new game on a nineteen by nineteen board", () => {
+    expect(DEFAULT_BOARD_SIZE).toBe(19);
+    expect(emptyBoard(DEFAULT_BOARD_SIZE)).toHaveLength(361);
   });
 
   it("defines komi for every supported size", () => {
     expect(komiFor(5)).toBe(0);
-    expect(komiFor(9)).toBe(7.5);
-    expect(() => komiFor(19)).toThrow(/komi/u);
+    expect(komiFor(19)).toBe(7.5);
+    expect(() => komiFor(9)).toThrow(/komi/u);
   });
 
   it("round trips a board through its encoded form", () => {
@@ -193,8 +193,8 @@ describe("Go rules", () => {
     expect(result.label).toBe("Draw");
   });
 
-  it("gives white the komi on an empty nine by nine board", () => {
-    const result = resultOf(replayMoves(9, []));
+  it("gives white the komi on an empty nineteen by nineteen board", () => {
+    const result = resultOf(replayMoves(19, []));
 
     expect(result.winner).toBe(-1);
     expect(result.margin).toBe(7.5);

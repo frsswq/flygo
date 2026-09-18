@@ -1,4 +1,4 @@
-"""Tromp-Taylor Go rules for square boards from 5x5 through 9x9.
+"""Tromp-Taylor Go rules for 5x5 validation and standard 19x19 Go.
 
 The ruleset follows Tromp-Taylor: area scoring, positional superko, self-capture
 is allowed, and two consecutive passes end the game. See
@@ -13,15 +13,13 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import NDArray
 
-MIN_BOARD_SIZE = 5
-MAX_BOARD_SIZE = 9
-DEFAULT_BOARD_SIZE = 9
-BOARD_SIZES = tuple(range(MIN_BOARD_SIZE, MAX_BOARD_SIZE + 1))
+DEFAULT_BOARD_SIZE = 19
+BOARD_SIZES = (5, 19)
 RULESET = "Tromp-Taylor, area scoring, positional superko"
 
 # Komi is 0 on 5x5 so that the published solved result (Black wins by 25 under
-# area scoring) holds. Larger boards use the 7.5 that Chinese rules use on 9x9.
-KOMI_BY_SIZE: dict[int, float] = {5: 0.0, 6: 7.5, 7: 7.5, 8: 7.5, 9: 7.5}
+# area scoring) holds. Standard 19x19 uses 7.5 komi.
+KOMI_BY_SIZE: dict[int, float] = {5: 0.0, 19: 7.5}
 
 _MASK64 = 0xFFFFFFFFFFFFFFFF
 _MIX_ADD = 0x9E3779B97F4A7C15
@@ -94,8 +92,9 @@ class Position:
     size: int = DEFAULT_BOARD_SIZE
 
     def __post_init__(self) -> None:
-        if not MIN_BOARD_SIZE <= self.size <= MAX_BOARD_SIZE:
-            raise ValueError(f"Board size must be between {MIN_BOARD_SIZE} and {MAX_BOARD_SIZE}")
+        if self.size not in BOARD_SIZES:
+            supported = " or ".join(str(size) for size in BOARD_SIZES)
+            raise ValueError(f"Board size must be {supported}")
         expected = self.points
         if len(self.board) != expected or any(stone not in {-1, 0, 1} for stone in self.board):
             raise ValueError(

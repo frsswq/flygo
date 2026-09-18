@@ -1,4 +1,4 @@
-"""Tromp-Taylor rules for square boards from 5x5 through 9x9."""
+"""Tromp-Taylor rules for 5x5 validation and standard 19x19 Go."""
 
 import pytest
 
@@ -35,20 +35,20 @@ def test_empty_board_allows_every_action(size: int) -> None:
     assert position.pass_action == size * size
 
 
-def test_default_board_size_is_nine() -> None:
-    assert DEFAULT_BOARD_SIZE == 9
-    assert Position.empty().points == 81
+def test_default_board_size_is_nineteen() -> None:
+    assert DEFAULT_BOARD_SIZE == 19
+    assert Position.empty().points == 361
 
 
 def test_komi_covers_every_supported_size() -> None:
     assert set(KOMI_BY_SIZE) == set(BOARD_SIZES)
     assert komi_for(5) == 0
-    assert komi_for(9) == 7.5
+    assert komi_for(19) == 7.5
 
 
 def test_komi_rejects_an_unsupported_size() -> None:
     with pytest.raises(ValueError, match="komi"):
-        komi_for(19)
+        komi_for(9)
 
 
 def test_play_captures_surrounded_stone() -> None:
@@ -172,7 +172,7 @@ def test_result_reports_a_draw_on_an_empty_five_by_five_board() -> None:
 
 
 def test_result_gives_white_the_komi_on_a_larger_empty_board() -> None:
-    result = Position.empty(9).result()
+    result = Position.empty(19).result()
 
     assert result.winner == -1
     assert result.margin == 7.5
@@ -187,13 +187,13 @@ def test_result_labels_the_solved_margin_on_a_full_five_by_five_board() -> None:
 
 
 def test_board_size_is_validated() -> None:
-    with pytest.raises(ValueError, match="between"):
-        Position.empty(4)
+    with pytest.raises(ValueError, match="5 or 19"):
+        Position.empty(9)
 
 
 def test_board_must_match_the_size() -> None:
-    with pytest.raises(ValueError, match="81 values"):
-        Position((0,) * 25, 1, (), 9)
+    with pytest.raises(ValueError, match="361 values"):
+        Position((0,) * 25, 1, (), 19)
 
 
 def test_history_must_hold_keys() -> None:

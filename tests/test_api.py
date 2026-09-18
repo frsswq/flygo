@@ -34,11 +34,11 @@ def test_simulation_uses_bundled_official_subgraph() -> None:
     assert result.recommended_action in result.legal_actions
 
 
-def test_default_board_size_is_nine() -> None:
+def test_default_board_size_is_nineteen() -> None:
     result = simulate(PositionRequest(moves=[]))
 
-    assert result.size == 9
-    assert len(result.legal_actions) == 82
+    assert result.size == 19
+    assert len(result.legal_actions) == 362
     assert result.recommended_action in result.legal_actions
 
 
@@ -109,8 +109,8 @@ def test_a_scored_five_by_five_game_is_a_draw_at_zero_komi() -> None:
     assert result.score.label == "Draw"
 
 
-def test_a_scored_nine_by_nine_game_gives_white_the_komi() -> None:
-    result = play_turn(TurnRequest(size=9, moves=[81, 81]))
+def test_a_scored_nineteen_by_nineteen_game_gives_white_the_komi() -> None:
+    result = play_turn(TurnRequest(size=19, moves=[361, 361]))
 
     assert result.score is not None
     assert result.score.label == "White by 7.5"

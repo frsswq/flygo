@@ -1,5 +1,5 @@
 /**
- * Tromp-Taylor Go rules for square boards from 5x5 through 9x9.
+ * Tromp-Taylor Go rules for 5x5 validation and standard 19x19 Go.
  *
  * This mirrors `src/flygo/go.py` exactly: area scoring, positional superko,
  * self-capture allowed, and two consecutive passes ending the game. Both
@@ -10,19 +10,16 @@
 export type Stone = -1 | 0 | 1;
 export type Player = 1 | -1;
 
-export const BOARD_SIZES = [5, 6, 7, 8, 9] as const;
+export const BOARD_SIZES = [5, 19] as const;
 export const MIN_BOARD_SIZE = 5;
-export const MAX_BOARD_SIZE = 9;
-export const DEFAULT_BOARD_SIZE = 9;
+export const MAX_BOARD_SIZE = 19;
+export const DEFAULT_BOARD_SIZE = 19;
 export const RULESET = "Tromp-Taylor, area scoring, positional superko";
 
 /** Komi is 0 on 5x5 so the published solved result of Black +25 holds. */
 const KOMI_BY_SIZE: Readonly<Record<number, number>> = {
+  19: 7.5,
   5: 0,
-  6: 7.5,
-  7: 7.5,
-  8: 7.5,
-  9: 7.5,
 };
 
 export interface Position {
