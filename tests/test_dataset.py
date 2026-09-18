@@ -56,6 +56,17 @@ def test_dataset_keeps_complete_games_in_one_split(tmp_path: Path) -> None:
     assert populated[0]["value"].tolist() == [1, -1, 1]
 
 
+def test_dataset_deduplicates_positions_across_complete_games(tmp_path: Path) -> None:
+    first = parse_sgf_collection(SGF)[0]
+    second = parse_sgf_collection(SGF.replace(b"RE[B+R]", b"RE[B+R]C[copy]"))[0]
+
+    summary = build_dataset([first, second], tmp_path / "dataset")
+
+    assert summary.accepted_games == 2
+    assert summary.examples == 3
+    assert summary.duplicate_examples == 3
+
+
 def test_teacher_targets_replace_human_policy_and_value(tmp_path: Path) -> None:
     (game,) = parse_sgf_collection(SGF)
     identifier = sample_id(game.game_id, 0)

@@ -140,7 +140,8 @@ def main() -> None:
         )
         print(
             f"{arguments.output}: {result.accepted_games} games, "
-            f"{result.examples} examples, {result.rejected_games} rejected"
+            f"{result.examples} examples, {result.duplicate_examples} duplicates, "
+            f"{result.rejected_games} rejected"
         )
     elif arguments.command == "teacher-queries":
         from flygo.dataset import load_sgf_games

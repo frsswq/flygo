@@ -44,6 +44,7 @@ class DatasetSummary:
     """Counts and hashes written to a dataset manifest."""
 
     accepted_games: int
+    duplicate_examples: int
     examples: int
     rejected_games: int
 
@@ -244,13 +245,22 @@ def build_dataset(
     if len(game_ids) != len(set(game_ids)):
         raise ValueError("Duplicate games were supplied")
     split_rows: dict[str, list[tuple[Any, ...]]] = {name: [] for name in SPLITS}
+    seen_positions: set[bytes] = set()
     accepted = 0
+    duplicates = 0
     rejected = 0
-    for game in games:
+    for game in sorted(games, key=lambda candidate: candidate.game_id):
         if game.size != size:
             rejected += 1
             continue
-        split_rows[split_of(game.game_id)].extend(_examples(game, teacher, stride))
+        split = split_of(game.game_id)
+        for row in _examples(game, teacher, stride):
+            position_key = row[1].tobytes()
+            if position_key in seen_positions:
+                duplicates += 1
+                continue
+            seen_positions.add(position_key)
+            split_rows[split].append(row)
         accepted += 1
     if accepted == 0:
         raise ValueError(f"No {size}x{size} games were supplied")
@@ -272,6 +282,7 @@ def build_dataset(
         "split": "sha256(game_id) 80/10/10",
         "symmetry": "dihedral-8 at training time",
         "accepted_games": accepted,
+        "duplicate_examples": duplicates,
         "rejected_games": rejected,
         "teacher_targets": len(teacher),
         "game_set_sha256": hashlib.sha256("\n".join(sorted(game_ids)).encode()).hexdigest(),
@@ -284,4 +295,9 @@ def build_dataset(
     temporary_manifest = output / ".manifest.json.tmp"
     temporary_manifest.write_text(json.dumps(manifest, indent=2) + "\n")
     temporary_manifest.replace(manifest_path)
-    return DatasetSummary(accepted, sum(len(rows) for rows in split_rows.values()), rejected)
+    return DatasetSummary(
+        accepted,
+        duplicates,
+        sum(len(rows) for rows in split_rows.values()),
+        rejected,
+    )
