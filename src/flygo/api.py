@@ -143,8 +143,12 @@ def _strongest_neurons(activity: FloatArray) -> list[ActiveNeuron]:
 
 def _replay(size: int, moves: Sequence[int]) -> Position:
     position = Position.empty(size)
+    consecutive_passes = 0
     for action in moves:
+        if consecutive_passes >= 2:
+            raise ValueError("That game is already over")
         position = position.play(action)
+        consecutive_passes = consecutive_passes + 1 if action == position.pass_action else 0
     return position
 
 
@@ -209,8 +213,6 @@ def simulate(
 def play_turn(request: TurnRequest) -> TurnResponse:
     """Apply the last action, then let FlyGo answer as White."""
     pass_action = request.size * request.size
-    if _trailing_passes(request.moves[:-1], pass_action) >= 2:
-        raise HTTPException(status_code=422, detail="That game is already over")
     try:
         position = _replay(request.size, request.moves)
         passes = _trailing_passes(request.moves, pass_action)

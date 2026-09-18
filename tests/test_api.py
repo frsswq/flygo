@@ -91,9 +91,10 @@ def test_second_consecutive_pass_ends_game_without_computer_move() -> None:
     assert result.consecutive_passes == 2
 
 
-def test_a_move_after_the_game_ended_is_rejected() -> None:
+@pytest.mark.parametrize("moves", ([25, 25, 0], [25, 25, 0, 1]))
+def test_a_move_after_the_game_ended_is_rejected(moves: list[int]) -> None:
     with pytest.raises(HTTPException) as error:
-        play_turn(TurnRequest(size=5, moves=[25, 25, 25]))
+        play_turn(TurnRequest(size=5, moves=moves))
 
     assert error.value.status_code == 422
     assert "already over" in error.value.detail
