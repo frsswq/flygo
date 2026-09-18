@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   DEFAULT_BOARD_SIZE,
@@ -8,44 +8,13 @@ import {
   resultOf,
   trailingPasses,
 } from "@/lib/go-rules";
-import type { Position } from "@/lib/go-rules";
-import {
-  activityOf,
-  chooseAction,
-  loadWebBundle,
-  logitsOf,
-} from "@/lib/policy";
-import type {
-  Dynamics,
-  GraphBundle,
-  PolicyBundle,
-  WebBundle,
-} from "@/lib/policy";
+import type { FlyGoWorkerResponse } from "@/lib/worker-protocol";
 
 const BUNDLE_URL = `${import.meta.env.BASE_URL}flygo/`;
+const SEARCH_TIME_MS = 1000;
 
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : "Unknown simulation error";
-
-const policyMove = (
-  graph: GraphBundle,
-  policy: PolicyBundle,
-  dynamics: Dynamics,
-  position: Position
-): { action: number; activity: Float32Array } => {
-  const activity = activityOf(graph, policy, dynamics, position);
-  return {
-    action: chooseAction(logitsOf(policy, activity), legalActions(position)),
-    activity,
-  };
-};
-
-const readingOf = (
-  bundle: WebBundle,
-  policy: PolicyBundle,
-  size: number
-): { action: number; activity: Float32Array } =>
-  policyMove(bundle.graph, policy, bundle.dynamics, replayMoves(size, []));
 
 export const useFlyGoGame = () => {
   const [size, setSize] = useState(DEFAULT_BOARD_SIZE);
@@ -54,81 +23,147 @@ export const useFlyGoGame = () => {
   const [activity, setActivity] = useState<Float32Array>(
     () => new Float32Array(0)
   );
-  const [loaded, setLoaded] = useState<{
-    bundle: WebBundle;
-    size: number;
-  } | null>(null);
+  const [ready, setReady] = useState(false);
+  const [thinking, setThinking] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+  const [searchSummary, setSearchSummary] = useState<string | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const requestRef = useRef(0);
+  const pendingHumanActionRef = useRef<number | null>(null);
 
-  const bundle = loaded?.size === size ? loaded.bundle : null;
-  const policy = bundle?.policies.get(size);
-  const isLoading = bundle === null;
   const position = useMemo(() => replayMoves(size, moves), [size, moves]);
   const legal = useMemo(() => legalActions(position), [position]);
   const result = useMemo(() => resultOf(position), [position]);
   const gameOver = trailingPasses(moves, size) >= 2;
 
   useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const next = await loadWebBundle(BUNDLE_URL, size);
-        if (cancelled) {
-          return;
-        }
-        setLoaded({ bundle: next, size });
-        setActivity(
-          readingOf(next, next.policies.get(size) as PolicyBundle, size)
-            .activity
-        );
-        setFailure(null);
-      } catch (error: unknown) {
-        if (!cancelled) {
-          setFailure(messageOf(error));
-        }
+    const worker = new Worker(
+      new URL("../workers/flygo-worker.ts", import.meta.url),
+      { type: "module" }
+    );
+    workerRef.current = worker;
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
+
+    const receive = (event: MessageEvent<FlyGoWorkerResponse>) => {
+      const response = event.data;
+      if (response.requestId !== requestRef.current) {
+        return;
       }
+      if (response.type === "error") {
+        setFailure(response.message);
+        setThinking(false);
+        return;
+      }
+      setActivity(response.activity);
+      if (response.type === "ready") {
+        setReady(true);
+        return;
+      }
+      const pass = passActionFor(size);
+      const humanAction = pendingHumanActionRef.current;
+      setMoves((current) => [...current, response.action]);
+      setLastMove(response.action === pass ? humanAction : response.action);
+      setSearchSummary(
+        `${response.simulations} simulations in ${Math.round(response.elapsedMs)} ms`
+      );
+      setThinking(false);
     };
-    void load();
+    const fail = (event: ErrorEvent) => {
+      setFailure(event.message || "The search worker failed");
+      setThinking(false);
+    };
+    worker.addEventListener("message", receive);
+    worker.addEventListener("error", fail);
+    worker.postMessage(
+      {
+        baseUrl: BUNDLE_URL,
+        requestId,
+        size,
+        type: "initialize",
+      },
+      []
+    );
     return () => {
-      cancelled = true;
+      worker.removeEventListener("message", receive);
+      worker.removeEventListener("error", fail);
+      worker.terminate();
+      if (workerRef.current === worker) {
+        workerRef.current = null;
+      }
     };
   }, [size]);
 
   const play = useCallback(
     (action: number) => {
-      if (!(bundle && policy) || gameOver) {
+      const worker = workerRef.current;
+      if (
+        !(worker && ready) ||
+        thinking ||
+        gameOver ||
+        !legal.includes(action)
+      ) {
         return;
       }
-      const pass = passActionFor(size);
-      const passing = action === pass;
       try {
-        const afterHuman = replayMoves(size, [...moves, action]);
-        const reading = policyMove(
-          bundle.graph,
-          policy,
-          bundle.dynamics,
-          afterHuman
-        );
-        // White passes back after a human pass, because the untrained readout
-        // ranks the pass action last. The two consecutive passes then end the
-        // game, and the status word reports the area score.
-        const played = passing ? [action, pass] : [action, reading.action];
-        setMoves([...moves, ...played]);
-        setActivity(reading.activity);
-        if (!passing) {
-          setLastMove(reading.action === pass ? action : reading.action);
+        const nextMoves = [...moves, action];
+        replayMoves(size, nextMoves);
+        setMoves(nextMoves);
+        setFailure(null);
+        setSearchSummary(null);
+        pendingHumanActionRef.current = action;
+        if (trailingPasses(nextMoves, size) >= 2) {
+          setLastMove(action === passActionFor(size) ? lastMove : action);
+          return;
         }
+        const requestId = requestRef.current + 1;
+        requestRef.current = requestId;
+        setThinking(true);
+        worker.postMessage(
+          {
+            baseUrl: BUNDLE_URL,
+            moves: nextMoves,
+            requestId,
+            size,
+            timeMs: SEARCH_TIME_MS,
+            type: "move",
+          },
+          []
+        );
       } catch (error: unknown) {
         setFailure(messageOf(error));
       }
     },
-    [bundle, gameOver, moves, policy, size]
+    [gameOver, lastMove, legal, moves, ready, size, thinking]
   );
 
-  let status = "Your turn";
+  const reset = useCallback(() => {
+    setMoves([]);
+    setLastMove(null);
+    setSearchSummary(null);
+    setFailure(null);
+    setThinking(false);
+    const worker = workerRef.current;
+    if (worker) {
+      const requestId = requestRef.current + 1;
+      requestRef.current = requestId;
+      setReady(false);
+      worker.postMessage(
+        {
+          baseUrl: BUNDLE_URL,
+          requestId,
+          size,
+          type: "initialize",
+        },
+        []
+      );
+    }
+  }, [size]);
+
+  let status = searchSummary ? `Your turn · ${searchSummary}` : "Your turn";
   if (gameOver) {
     status = result.label;
-  } else if (isLoading) {
+  } else if (!ready || thinking) {
     status = "Thinking";
   }
   if (failure !== null) {
@@ -140,22 +175,21 @@ export const useFlyGoGame = () => {
     board: position.board,
     error: failure,
     gameOver,
-    isLoading,
+    isLoading: !ready || thinking,
     lastMove,
     legalActions: legal,
     play,
-    reset: () => {
-      setMoves([]);
-      setLastMove(null);
-      if (bundle && policy) {
-        setActivity(readingOf(bundle, policy, size).activity);
-      }
-    },
+    reset,
     selectSize: (next: number) => {
       if (next !== size) {
+        setReady(false);
+        setThinking(false);
+        setFailure(null);
+        setActivity(new Float32Array(0));
         setSize(next);
         setMoves([]);
         setLastMove(null);
+        setSearchSummary(null);
       }
     },
     size,
