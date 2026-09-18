@@ -16,6 +16,20 @@ DEFAULT_GRAPH = Path("data/processed/malecns-traced-w5.parquet")
 DEFAULT_PROFILE = Path("docs/data-profile.json")
 
 
+def _sgf_paths(inputs: list[Path]) -> list[Path]:
+    paths: list[Path] = []
+    for item in inputs:
+        if item.is_dir():
+            paths.extend(item.rglob("*.sgf"))
+        elif item.suffix.lower() == ".sgf":
+            paths.append(item)
+        else:
+            raise SystemExit(f"Not an SGF file or directory: {item}")
+    if not paths:
+        raise SystemExit("No SGF files found")
+    return sorted(set(paths))
+
+
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(prog="flygo")
     commands = root.add_subparsers(dest="command", required=True)
@@ -31,6 +45,29 @@ def parser() -> argparse.ArgumentParser:
     prepare.add_argument("--data", type=Path, default=DEFAULT_RAW)
     prepare.add_argument("--output", type=Path, default=DEFAULT_GRAPH)
     prepare.add_argument("--minimum-weight", type=int, default=5)
+
+    dataset = commands.add_parser("build-dataset", help="Build split policy-value data from SGF")
+    dataset.add_argument("--sgf", type=Path, nargs="+", required=True)
+    dataset.add_argument("--output", type=Path, required=True)
+    dataset.add_argument("--size", type=int, default=19)
+    dataset.add_argument("--stride", type=int, default=1)
+    dataset.add_argument("--teacher", type=Path)
+
+    queries = commands.add_parser("teacher-queries", help="Write KataGo analysis JSON Lines")
+    queries.add_argument("--sgf", type=Path, nargs="+", required=True)
+    queries.add_argument("--output", type=Path, required=True)
+    queries.add_argument("--visits", type=int, default=256)
+
+    teacher = commands.add_parser("teacher-import", help="Import KataGo analysis JSON Lines")
+    teacher.add_argument("--sgf", type=Path, nargs="+", required=True)
+    teacher.add_argument("--analysis", type=Path, required=True)
+    teacher.add_argument("--output", type=Path, required=True)
+    teacher.add_argument(
+        "--winrate-perspective",
+        choices=("black", "white", "side-to-move"),
+        default="black",
+        help="The reportAnalysisWinratesAs value used by KataGo",
+    )
 
     conformance = commands.add_parser(
         "conformance",
@@ -67,6 +104,40 @@ def main() -> None:
             minimum_weight=arguments.minimum_weight,
         )
         print(arguments.output)
+    elif arguments.command == "build-dataset":
+        from flygo.dataset import build_dataset, load_sgf_games
+
+        games = load_sgf_games(_sgf_paths(arguments.sgf))
+        result = build_dataset(
+            games,
+            arguments.output,
+            size=arguments.size,
+            stride=arguments.stride,
+            teacher_path=arguments.teacher,
+        )
+        print(
+            f"{arguments.output}: {result.accepted_games} games, "
+            f"{result.examples} examples, {result.rejected_games} rejected"
+        )
+    elif arguments.command == "teacher-queries":
+        from flygo.dataset import load_sgf_games
+        from flygo.teacher import write_katago_queries
+
+        games = load_sgf_games(_sgf_paths(arguments.sgf))
+        count = write_katago_queries(games, arguments.output, visits=arguments.visits)
+        print(f"{arguments.output}: {count} queries")
+    elif arguments.command == "teacher-import":
+        from flygo.dataset import load_sgf_games
+        from flygo.teacher import import_katago_analysis
+
+        games = load_sgf_games(_sgf_paths(arguments.sgf))
+        count = import_katago_analysis(
+            arguments.analysis,
+            arguments.output,
+            games,
+            winrate_perspective=arguments.winrate_perspective,
+        )
+        print(f"{arguments.output}: {count} targets")
     elif arguments.command == "conformance":
         fixture = write_conformance(arguments.output)
         print(
