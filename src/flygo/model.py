@@ -68,6 +68,12 @@ class ConnectomePolicy:
         """Fit a deterministic ridge classifier while keeping the graph frozen."""
         if activities.ndim != 2 or activities.shape[1] != self.connectome.node_count:
             raise ValueError("Activities must have one column per connectome node")
+        if labels.ndim != 1 or labels.shape[0] != activities.shape[0]:
+            raise ValueError("Labels must provide one action for each activity row")
+        if labels.size == 0:
+            raise ValueError("At least one training example is required")
+        if np.any(labels < 0) or np.any(labels >= self.action_count):
+            raise ValueError(f"Labels must be between 0 and {self.action_count - 1}")
         targets = np.eye(self.action_count, dtype=np.float32)[labels]
         gram = activities @ activities.T
         system = gram + regularization * np.eye(gram.shape[0], dtype=np.float32)
