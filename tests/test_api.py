@@ -1,3 +1,4 @@
+import random
 from pathlib import Path
 
 import pytest
@@ -5,7 +6,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from flygo.api import PositionRequest, TurnRequest, health, index, play_turn, simulate
-from flygo.go import BOARD_SIZES
+from flygo.go import BOARD_SIZES, Position
 
 
 def test_home_page_is_available() -> None:
@@ -125,6 +126,18 @@ def test_action_must_fit_the_board() -> None:
         TurnRequest(size=5, moves=[26])
 
 
-def test_move_list_has_a_length_limit() -> None:
-    with pytest.raises(ValidationError):
-        PositionRequest(size=5, moves=[25] * 117)
+def test_a_legal_game_can_exceed_the_old_request_length_limit() -> None:
+    generator = random.Random(3)
+    position = Position.empty(5)
+    moves: list[int] = []
+    for _ in range(117):
+        non_pass_actions = [
+            action for action in position.legal_actions() if action != position.pass_action
+        ]
+        action = generator.choice(non_pass_actions)
+        moves.append(action)
+        position = position.play(action)
+
+    result = simulate(PositionRequest(size=5, moves=moves))
+
+    assert result.to_play == -1

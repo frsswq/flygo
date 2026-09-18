@@ -29,8 +29,6 @@ STATIC_DIRECTORY = PACKAGE_DIRECTORY / "static"
 TOPOLOGY_DESCRIPTION = "Official MaleCNS v1.0 derived sensory-path sample (461 neurons, 605 edges)"
 MODEL_STATUS = "Untrained encoder/readout demonstration"
 BOARD_SIZE_FIELD = Field(default=DEFAULT_BOARD_SIZE, ge=MIN_BOARD_SIZE, le=MAX_BOARD_SIZE)
-MOVE_LIMIT_FACTOR = 4
-MOVE_LIMIT_OFFSET = 16
 
 _edges = pl.read_parquet(ASSET_DIRECTORY / "malecns-sample.parquet")
 _neurons = pl.read_parquet(ASSET_DIRECTORY / "malecns-sample-neurons.parquet")
@@ -58,9 +56,6 @@ class MoveSequence(BaseModel):
 
     @model_validator(mode="after")
     def check_moves(self) -> Self:
-        limit = MOVE_LIMIT_FACTOR * self.size * self.size + MOVE_LIMIT_OFFSET
-        if len(self.moves) > limit:
-            raise ValueError(f"A {self.size}x{self.size} game cannot exceed {limit} actions")
         pass_action = self.size * self.size
         if any(not 0 <= action <= pass_action for action in self.moves):
             raise ValueError("Every action must be a board point or pass")
