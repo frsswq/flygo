@@ -154,14 +154,18 @@ class Position:
         return Position(next_board, opponent, history, self.size)
 
     def legal_actions(self) -> tuple[int, ...]:
-        legal = [self.pass_action]
+        return tuple(action for action, _ in self.legal_children())
+
+    def legal_children(self) -> tuple[tuple[int, Position], ...]:
+        """Return each legal action with its already-computed child position."""
+        legal = [(self.pass_action, self.play(self.pass_action))]
         for action, stone in enumerate(self.board):
             if stone == 0:
                 try:
-                    self.play(action)
+                    child = self.play(action)
                 except ValueError:
                     continue
-                legal.append(action)
+                legal.append((action, child))
         return tuple(legal)
 
     def result(self) -> GameResult:

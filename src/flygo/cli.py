@@ -78,6 +78,19 @@ def parser() -> argparse.ArgumentParser:
     train.add_argument("--steps", type=int, default=8)
     train.add_argument("--seed", type=int, default=7)
 
+    benchmark = commands.add_parser("benchmark", help="Run a paired FlyGo Elo league")
+    benchmark.add_argument("--policy", type=Path, required=True)
+    benchmark.add_argument("--output", type=Path, required=True)
+    benchmark.add_argument("--size", type=int, default=19)
+    benchmark.add_argument("--rounds", type=int, default=1)
+    budget = benchmark.add_mutually_exclusive_group()
+    budget.add_argument("--seconds", type=float)
+    budget.add_argument("--simulations", type=int)
+    benchmark.add_argument("--max-moves", type=int)
+    benchmark.add_argument("--bootstrap-samples", type=int, default=500)
+    benchmark.add_argument("--seed", type=int, default=7)
+    benchmark.add_argument("--openings", type=Path)
+
     conformance = commands.add_parser(
         "conformance",
         help="Regenerate the shared rules conformance fixture",
@@ -185,6 +198,67 @@ def main() -> None:
             f"validation policy={final.validation_policy_loss}, "
             f"value={final.validation_value_loss}"
         )
+    elif arguments.command == "benchmark":
+        import hashlib
+
+        from flygo.arena import (
+            elo_with_confidence,
+            greedy_agent,
+            mcts_agent,
+            paired_tournament,
+            random_agent,
+            write_tournament_report,
+        )
+        from flygo.connectome import load_connectome
+        from flygo.training import load_policy
+
+        connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
+        policy, policy_metadata = load_policy(arguments.policy, connectome)
+        if policy.size != arguments.size:
+            raise SystemExit("Policy and benchmark board sizes differ")
+        openings = [[]]
+        if arguments.openings is not None:
+            openings = json.loads(arguments.openings.read_text())
+            if not isinstance(openings, list) or any(
+                not isinstance(opening, list) for opening in openings
+            ):
+                raise SystemExit("Openings must be a JSON array of action arrays")
+        seconds = arguments.seconds if arguments.seconds is not None else 1.0
+        search_agent = (
+            mcts_agent(policy, simulations=arguments.simulations)
+            if arguments.simulations is not None
+            else mcts_agent(policy, time_limit=seconds)
+        )
+        agents = [random_agent(seed=arguments.seed), greedy_agent(policy), search_agent]
+        games = paired_tournament(
+            agents,
+            size=arguments.size,
+            openings=openings,
+            rounds=arguments.rounds,
+            max_moves=arguments.max_moves,
+        )
+        ratings = elo_with_confidence(
+            games,
+            anchor="random",
+            bootstrap_samples=arguments.bootstrap_samples,
+            seed=arguments.seed,
+        )
+        write_tournament_report(
+            arguments.output,
+            games,
+            ratings,
+            metadata={
+                "size": arguments.size,
+                "ruleset": "Tromp-Taylor, area scoring, positional superko",
+                "rounds": arguments.rounds,
+                "seconds": seconds if arguments.simulations is None else None,
+                "simulations": arguments.simulations,
+                "seed": arguments.seed,
+                "policy_sha256": hashlib.sha256(arguments.policy.read_bytes()).hexdigest(),
+                "policy": policy_metadata,
+            },
+        )
+        print(f"{arguments.output}: {len(games)} games")
     elif arguments.command == "conformance":
         fixture = write_conformance(arguments.output)
         print(
