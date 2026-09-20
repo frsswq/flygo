@@ -61,8 +61,8 @@ Cloudflare currently permits individual Worker static assets up to 25 MiB.
 The 19x19 graph and policy total about 2.0 MB.
 See the [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/) before increasing model size.
 
-## Custom domain
+## Hostname
 
-The intended hostname is `gofly.farissaifuddin.com`.
-The registrar must remove the client hold from `farissaifuddin.com`, and DNS must point `gofly` at `flygo.pages.dev` before that hostname can resolve.
-Use the Pages URL until both conditions hold.
+Use the default Pages URL.
+A custom hostname is out of scope for now.
+Revisit it after the trained release.
