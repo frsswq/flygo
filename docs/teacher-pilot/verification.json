@@ -1,0 +1,69 @@
+{
+  "games": 24,
+  "game_splits": {
+    "test": 1,
+    "train": 21,
+    "validation": 2
+  },
+  "requested_positions": 244,
+  "completed_targets": 244,
+  "positions_by_player": {
+    "black": 129,
+    "white": 115
+  },
+  "visits_per_position": 256,
+  "stride": 33,
+  "examples": 221,
+  "duplicates_removed": 23,
+  "split_examples": {
+    "train": 195,
+    "validation": 18,
+    "test": 8
+  },
+  "split_players": {
+    "train": {
+      "black": 94,
+      "white": 101
+    },
+    "validation": {
+      "black": 8,
+      "white": 10
+    },
+    "test": {
+      "black": 4,
+      "white": 4
+    }
+  },
+  "runtime": {
+    "python": "3.13.11",
+    "numpy": "2.5.3"
+  },
+  "all_targets_from_teacher": true,
+  "matches_strict_rebuild": true,
+  "sha256": {
+    "sources": "64d3b1420dfc70ae95b44c962655b2ac38be39efd72a23b48948a864521d65db",
+    "configuration": "89fc12a11c2ab1474584f63b581a7a10532e6a0a04b1da5b97da470828541cab",
+    "queries": "299afc60af0a1a427ee9ade583c39665e924a55430a034b23836e0d8abf2e102",
+    "raw_analysis": "7d012aaed186884e146347a99aa5d9de633c1f676e4a8100a01b7dee8a99eed6",
+    "teacher_targets": "00ddf42856f5853a801f3435a8f7ae057ab7555a113925877865dab80592e64e",
+    "dataset_manifest": "3dd2a1c60e34c7c18ac2b52b630862a949a4d0be321841a81bea14bd7cf45b2f",
+    "engine_executable": "0e6cc918840e6ef67c0b4a21109585306df7aaa3772971574e58deb8e8fc0575"
+  },
+  "files": {
+    "train": {
+      "file": "train.npz",
+      "examples": 195,
+      "sha256": "0c033f9bfce995b35f6d0dd9f155f5299a1a82a56a72bf6cc37d94e48aab61bb"
+    },
+    "validation": {
+      "file": "validation.npz",
+      "examples": 18,
+      "sha256": "bb6817a4640cce5a528be64569f49fef4b68ccb56552975e3326128b0f71f642"
+    },
+    "test": {
+      "file": "test.npz",
+      "examples": 8,
+      "sha256": "787e148045a1e02867e5cb02cf08c9f1c286cfdb28b150369052de5254113cd5"
+    }
+  }
+}

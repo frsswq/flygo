@@ -4,6 +4,25 @@ This pilot checks the real-data pipeline.
 It is too small to establish playing strength, learning efficiency, or an advantage from biological wiring.
 It does not replace the browser's untrained weights.
 
+## Completed run
+
+The dataset is available at `data/datasets/teacher-pilot-19/`.
+All 244 requested positions received complete teacher answers at 256 visits.
+Deduplication removed 23 repeated empty-board examples, leaving 221 training-ready examples.
+There are no fallback game-result or recorded-move targets.
+
+| Split | Games | Examples | Black to play | White to play |
+| --- | ---: | ---: | ---: | ---: |
+| Train | 21 | 195 | 94 | 101 |
+| Validation | 2 | 18 | 8 | 10 |
+| Test | 1 | 8 | 4 | 4 |
+
+The [verification report](teacher-pilot/verification.json) records the exact input and output hashes.
+The verifier rebuilt the dataset from the raw answers and matched every published split file.
+Labelling finished with exit code zero on 2026-09-20, from 11:28:53 UTC to 11:54:40 UTC.
+The 1,547-second duration includes engine startup but excludes initial tuning and the discarded trial.
+Other checks ran concurrently, so this is not a performance benchmark.
+
 ## Inputs
 
 The [source manifest](teacher-pilot/sources.json) pins every download, archive member, SGF hash, game ID, split, and analysis setting.

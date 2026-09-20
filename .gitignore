@@ -16,7 +16,12 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 
-# Training outputs
+# Training and evaluation outputs
+data/datasets/
+data/models/
+data/research/
+data/teacher/
+data/reports/
 artifacts/
 runs/
 
