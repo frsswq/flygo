@@ -8,10 +8,11 @@ Keep the order unless a measured result changes it.
 ## Current state
 
 - The full pipeline is implemented and checked.
-- All repository checks pass: Ruff, BasedPyright, vulture, pytest (96 tests), Ultracite, TypeScript, knip, and Vitest (40 tests).
+- All repository checks pass: Ruff, BasedPyright, vulture, pytest (112 tests), Ultracite, TypeScript, knip, and Vitest (40 tests).
 - The tracked backlog is empty.
 - The only real-data run is the [KataGo pilot](teacher-pilot.md): 24 games, 244 labelled positions, 221 training examples.
 - The browser bundle is untrained, and `web/public/flygo/manifest.json` reports `"trained": false` for both board sizes.
+- The untrained bundle is deployed at <https://gofly.farissaifuddin.com>.
 - No research report exists under `data/research/`.
 - The matched comparison in [research.md](research.md) has run only on synthetic smoke data.
 
