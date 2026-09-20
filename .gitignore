@@ -9,6 +9,8 @@ __pycache__/
 .env.*
 .dev.vars
 .wrangler/
+# Local machine notes
+*.local.md
 
 # Official MaleCNS downloads and generated experiment artifacts
 data/raw/*
