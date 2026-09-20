@@ -65,11 +65,46 @@ class FrozenConnectome:
         return state
 
     def randomized(self, *, seed: int) -> FrozenConnectome:
-        """Make a directed degree-preserving target rewire for a control experiment."""
+        """Attempt ten directed edge swaps per edge without new loops or parallel edges.
+
+        Keep weights attached to their source edge and leave existing self-loops fixed.
+        Small or constrained graphs can remain unchanged; this is not a uniform sampler.
+        """
         generator = np.random.default_rng(seed)
-        targets = generator.permutation(self.target_indices)
+        targets = self.target_indices.copy()
+        edges = set(zip(self.source_indices.tolist(), targets.tolist(), strict=True))
+        for _ in range(10 * self.edge_count):
+            first, second = generator.integers(self.edge_count, size=2)
+            source_a, target_a = int(self.source_indices[first]), int(targets[first])
+            source_b, target_b = int(self.source_indices[second]), int(targets[second])
+            if source_a == target_a or source_b == target_b:
+                continue
+            if source_a == target_b or source_b == target_a:
+                continue
+            if (source_a, target_b) in edges or (source_b, target_a) in edges:
+                continue
+            edges.remove((source_a, target_a))
+            edges.remove((source_b, target_b))
+            edges.update(((source_a, target_b), (source_b, target_a)))
+            targets[first], targets[second] = target_b, target_a
         return _freeze(
             self.node_ids.copy(), self.source_indices.copy(), targets, self.weights.copy()
+        )
+
+    def shuffled_weights(self, *, seed: int) -> FrozenConnectome:
+        """Preserve endpoints and the weight distribution, not per-node strength."""
+        weights = np.random.default_rng(seed).permutation(self.weights)
+        return _freeze(
+            self.node_ids.copy(), self.source_indices.copy(), self.target_indices.copy(), weights
+        )
+
+    def without_connections(self) -> FrozenConnectome:
+        """Remove all connectome edges while retaining nodes and intrinsic retention."""
+        return _freeze(
+            self.node_ids.copy(),
+            np.empty(0, dtype=np.int64),
+            np.empty(0, dtype=np.int64),
+            np.empty(0, dtype=np.float32),
         )
 
 
@@ -94,6 +129,10 @@ def from_frame(edges: pl.DataFrame) -> FrozenConnectome:
         raise ValueError(f"Missing graph columns: {', '.join(sorted(missing))}")
     if edges.is_empty():
         raise ValueError("The graph has no edges")
+    if edges.select(pl.struct("pre", "post").is_duplicated().any()).item():
+        raise ValueError("Graph endpoints must be unique directed pairs")
+    if not edges.select((pl.col("weight").is_finite() & (pl.col("weight") > 0)).all()).item():
+        raise ValueError("Graph weights must be finite and positive")
 
     nodes = (
         pl.concat(
