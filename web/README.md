@@ -1,23 +1,35 @@
 # FlyGo web
 
-This Vite React application provides the FlyGo research viewer. It uses shadcn components backed by Base UI, Tailwind CSS, and Ultracite with Oxlint and Oxfmt.
+This Vite React application runs the 5x5 and 19x19 FlyGo viewer entirely in the browser. A Web Worker loads the frozen graph and policy-value weights, then runs one-second PUCT search without blocking React.
 
-Run the FastAPI backend on port 8000 before starting the development server:
+## Develop
+
+Install dependencies from `web/`:
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Vite proxies `/api` to FastAPI during development. Production builds write to `../src/flygo/static/`.
+Open <http://127.0.0.1:5173>. No backend is required. Vite loads committed bundles from `public/flygo/`.
 
-Run the frontend quality gates with:
+## Check and build
 
 ```bash
 npm run check
 npm run typecheck
+npm run knip
 npm test
 npm run build
 ```
 
-Add another Base UI component with `npx shadcn@latest add <component>`.
+The default build writes the FastAPI-mounted artifact to `../src/flygo/static/`. Run `make static` from the repository root to write a root-mounted Cloudflare artifact to `web/dist/`.
+
+Generate browser weights from Python before a trained release:
+
+```bash
+uv run flygo export-web --policy data/models/flygo-19.npz
+uv run flygo policy-conformance
+```
+
+See the [training pipeline](../docs/pipeline.md) and [deployment guide](../docs/deploy.md) for the full workflow.

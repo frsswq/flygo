@@ -1,7 +1,20 @@
 # Deployment
 
-The site is static and all inference runs in the visitor's browser, so no server is required.
-Cloudflare serves files only, which is free and unmetered on the free plan.
+FlyGo is a static site.
+The visitor's browser loads the graph and policy-value weights, then runs one-second MCTS in a Web Worker.
+Cloudflare serves files but does not execute Go search.
+
+## Verify the model
+
+Inspect `web/public/flygo/manifest.json` before deployment.
+The 19x19 policy must have `"trained": true` for a trained release.
+The top-level checkpoint metadata must identify the dataset, graph, hyperparameters, and seed.
+
+Run all checks:
+
+```bash
+make check
+```
 
 ## Build the artifact
 
@@ -9,46 +22,30 @@ Cloudflare serves files only, which is free and unmetered on the free plan.
 make static
 ```
 
-That writes `web/dist/`, the directory to publish.
-It serves `/assets/*` (content hashed) and `/flygo/*` (the graph and one policy per board size).
-`web/public/_headers` sets the cache policy for both.
+This writes `web/dist/`.
+Content-hashed application and worker files live under `/assets/`.
+The graph, manifest, and policy files live under `/flygo/`.
+`web/public/_headers` sets their cache policy.
 
-Publish that directory with `wrangler`:
+Check the artifact locally:
+
+```bash
+uv run python -m http.server 8099 --directory web/dist
+```
+
+Open <http://127.0.0.1:8099> and verify that a 19x19 reply reports search simulations after about one second.
+
+## Publish to Cloudflare
 
 ```bash
 CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
   npx wrangler@4 pages deploy web/dist --project-name flygo --branch main
 ```
 
-The project `flygo` serves the production branch `main` at <https://flygo.pages.dev>.
-The command prints the URL of each deployment, including the immutable preview URL for that build.
-Keep the token outside the repository, for example in `~/.config/.wrangler/cf-api-token`.
+Keep credentials outside the repository.
+The command prints the production or preview URL.
 
-## Custom domain
-
-The project also carries the hostname `gofly.farissaifuddin.com`.
-The hostname is attached, but it is not live yet.
-
-Two conditions are missing:
-
-1. `farissaifuddin.com` is under a client hold at its registrar, so the domain does not resolve at all.
-   RDAP reports that status, and only the registrar can lift it.
-2. A `gofly` record must point at `flygo.pages.dev`.
-   The registry currently publishes `dalary.ns.cloudflare.com` and `john.ns.cloudflare.com` for the domain, and both answer `REFUSED`, which is what Cloudflare returns for a zone it does not host.
-   A subdomain does not need the zone in the Cloudflare account that holds the Pages project, so the record can live with whichever provider hosts the DNS once the delegation works.
-
-The Pages API reports the second condition as `CNAME record not set`:
-
-```bash
-curl -sS -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-  "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/flygo/domains/gofly.farissaifuddin.com"
-```
-
-Until both conditions hold, publish and share `https://flygo.pages.dev`.
-
-## Cloudflare settings
-
-Connect the repository once in the Cloudflare dashboard, then use these settings:
+For a repository-connected Pages build, use:
 
 | Setting | Value |
 | --- | --- |
@@ -57,12 +54,15 @@ Connect the repository once in the Cloudflare dashboard, then use these settings
 | Environment variable | `FLYGO_PUBLIC_BASE` = `/` |
 | Environment variable | `FLYGO_OUT_DIR` = `dist` |
 
-`FLYGO_PUBLIC_BASE` switches the built asset URLs from the FastAPI mount at `/static/` to the root.
-`FLYGO_OUT_DIR` keeps the deployable build out of the committed FastAPI build.
-Cloudflare Pages also accepts the same repository as a Workers project with `npx wrangler deploy`; the artifact is identical.
+`FLYGO_PUBLIC_BASE` changes asset URLs from the FastAPI `/static/` mount to the site root.
+`FLYGO_OUT_DIR` keeps deployable output separate from committed FastAPI assets.
 
-## Check the artifact locally
+Cloudflare currently permits individual Worker static assets up to 25 MiB.
+The 19x19 graph and policy total about 2.0 MB.
+See the [Cloudflare Workers limits](https://developers.cloudflare.com/workers/platform/limits/) before increasing model size.
 
-```bash
-python3 -m http.server 8099 --directory web/dist
-```
+## Custom domain
+
+The intended hostname is `gofly.farissaifuddin.com`.
+The registrar must remove the client hold from `farissaifuddin.com`, and DNS must point `gofly` at `flygo.pages.dev` before that hostname can resolve.
+Use the Pages URL until both conditions hold.

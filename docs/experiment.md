@@ -2,92 +2,123 @@
 
 ## Question
 
-Can the fixed topology of a real biological connectome provide useful computational structure for supervised Go policy learning?
+Can fixed topology from the official MaleCNS connectome provide useful computational structure for standard 19x19 Go policy-value learning?
 
 This is a topology-transfer experiment.
-It is not an attempt to reproduce a fly brain or claim that a fly can play Go.
-Board size is a parameter from 5x5 through 9x9.
-The exact 5x5 solver is the primary teacher, because 5x5 is fully solved and its value targets are exact.
+It does not reproduce a fly brain or claim that a fly can play Go.
+Use 19x19 for training and Elo.
+Keep 5x5 for exact rules, solver, and regression validation.
+
+## Primary objective
+
+Test whether frozen biological wiring improves Go playing strength, data efficiency, or compute efficiency over matched randomized and conventional models.
+Separate the strongest browser player from evidence that its biological wiring caused an improvement.
+Use the [research foundation protocol](research.md) for matched controls, reproducible screening, and the limits of the resulting claims.
 
 ## Fixed evidence and modeling assumptions
 
 The official MaleCNS release determines neuron IDs, directed endpoints, and connection strengths.
-The first experiment filters the graph to traced endpoints and connections with at least five detected synaptic contacts.
-The first experiment treats all connection weights as unsigned.
+The initial graph filters to traced endpoints and connections with at least five detected synaptic contacts.
+It treats connection weights as unsigned.
 
-FlyGo defines rate-coded state, incoming-strength normalization, decay, input placement, simulation steps, and optimization.
-Each such choice must appear in experiment metadata.
-Predicted neurotransmitters must not be converted to excitatory or inhibitory signs without a separate stated rule and sensitivity analysis.
+FlyGo defines rate-coded state, incoming-strength normalization, retention, recurrent gain, input placement, simulation steps, and optimization.
+Record every choice in experiment metadata.
+Do not convert predicted neurotransmitters to excitatory or inhibitory signs without a separate rule and sensitivity analysis.
 
 ## Models
 
 ### MaleCNS
 
-Keep the prepared edge endpoints and weights frozen.
-Train the board encoder and policy readout only.
-Use biologically annotated sensory populations for input when coverage permits.
-Use descending or motor-related populations for readout experiments when coverage permits.
+Keep graph endpoints and weights frozen.
+Train the board encoder, policy readout, and value readout through the recurrent dynamics.
+The policy predicts 361 points plus pass.
+The value predicts the result from the current player's perspective.
 
-### Rewired control
+### Rewired controls
 
-Randomly permute edge targets while preserving the source and target degree sequences.
-Run multiple seeds.
-Report the distribution rather than one selected run.
-Add a separate weight-shuffled control if connection strength is part of the claim.
+Randomly permute edge targets while preserving source and target degree sequences.
+Run multiple seeds and report the complete distribution.
+Add a separate weight-shuffled control when testing the contribution of connection strengths.
+Use identical data, optimization budgets, and tuning effort for every topology.
 
-### Conventional baseline
+### Conventional baselines
 
-Train a linear classifier and a small multilayer perceptron on the same board features and labels.
-Report trainable parameter counts and compute budgets.
-Do not claim topology benefit unless the comparison controls capacity and tuning effort.
+Train a linear model and a capacity-matched multilayer perceptron on the same features and targets.
+Report trainable parameter counts, inference cost, and optimization budgets.
+Do not claim a topology benefit without these controls.
 
 ## Go data
 
-Represent each position as two occupancy planes of `size * size` points and one player-to-move feature.
-Represent policy targets as `size * size` board points plus pass.
-Generate labels with a fixed, versioned teacher.
-Record the ruleset, komi, engine version, search settings, and random seed.
+Represent a position as two occupancy planes and one player-to-move feature.
+Represent policy targets as 362 probabilities and values in `[-1, 1]`.
+Use a fixed KataGo binary, network, configuration, rule set, visit count, and win-rate perspective.
+Record hashes and seeds.
 
 Split complete games before extracting positions.
 Never place positions from one game in more than one split.
-Deduplicate positions across train, validation, and test sets.
+Deduplicate board and side-to-move features globally before writing split files.
+Apply the eight square-board symmetries only within training.
+
+Human moves provide one-hot pretraining targets.
+KataGo visits provide soft policy targets and KataGo win rates provide value targets.
+Keep teacher analysis cached and immutable for a named dataset version.
 
 ## Rules
 
-The ruleset is Tromp-Taylor: area scoring, positional superko, self-capture allowed, and two consecutive passes end the game.
-The implementation lives in `src/flygo/go.py`.
-`tests/test_go.py` checks capture, self-capture, ko, pass, area scoring, and komi.
-Area scoring counts a player's stones plus every empty point that reaches only that player's stones.
-Dead stones stay on the board, so no dead-stone agreement is needed.
-Komi is 0.0 on 5x5, so the published solved result of Black +25 at komi 0 holds.
-Komi is 7.5 on 6x6 through 9x9, which is the value Chinese rules use on 9x9.
-Change `KOMI_BY_SIZE` in `src/flygo/go.py` to test another komi.
-The 6x6 entry is untuned and may favour White, because published komi estimates for 6x6 are near 3.
-The server replays the full action list of a game on every request, so superko covers the whole game instead of the previous position only.
-The server replays the full action list of a game on every request, so superko covers the whole game instead of the previous position only.
-The viewer keeps the rules engine unchanged and decides only when White answers.
-White answers every stone that Black places.
-When Black passes, White passes back, because the untrained readout ranks the pass action near last on 9x9 and the score would otherwise be unreachable.
-The two consecutive passes then end the game.
+FlyGo uses Tromp-Taylor area scoring, positional superko, self-capture, and two-pass termination.
+The implementation lives in `src/flygo/go.py` and is mirrored in `web/src/lib/go-rules.ts`.
+Shared conformance fixtures cover capture, self-capture, ko, pass, scoring, komi, and replay.
 
-## Metrics
+Komi is 0.0 on 5x5 to preserve the published solved result.
+Komi is 7.5 on 19x19.
+Area scoring leaves dead stones on the board and therefore requires no dead-stone agreement.
 
-Report these measures across seeds:
+## Training metrics
 
-- Top-1 teacher-move accuracy.
-- Top-3 teacher-move accuracy.
+Report these metrics for every seed:
+
+- Policy cross-entropy.
+- Top-1 and top-3 teacher agreement.
+- Value mean squared error.
 - Legal-action rate before masking.
-- Cross-entropy loss.
-- Win rate against fixed opponents.
-- Wall-clock time and peak memory.
+- Wall-clock training time.
+- Peak memory.
+- Checkpoint and graph hashes.
 
-Use confidence intervals for differences between MaleCNS and randomized controls.
-Publish all configured runs, including negative results.
+Use validation data for model selection.
+Read the test split only for a configured final run.
+
+## Playing-strength metrics
+
+Run paired games with colors reversed on versioned openings.
+Keep rules, komi, time control, opponents, and software versions fixed.
+Report wins, losses, draws, adjudications, relative Elo, and paired-bootstrap 95% intervals.
+Publish every game in the report.
+
+The built-in league anchors the random agent at zero Elo and compares greedy and MCTS FlyGo.
+Its Elo values are internal and cannot be compared with ratings from another opponent pool.
+A public strength claim needs a fixed external-engine league under the same conditions.
+
+Use one second per move for the production benchmark.
+Use fixed simulation counts for deterministic regressions.
+Do not enable root exploration noise during evaluation.
+
+## Release gate
+
+A production checkpoint must:
+
+- Match the frozen graph hash.
+- Improve validation policy and value metrics.
+- Improve paired Elo with a confidence interval that supports the claim.
+- Pass Python and browser conformance tests.
+- Fit the static asset and browser memory budgets.
+- Complete one-second searches without blocking the UI.
+- Mark the 19x19 manifest entry as trained.
 
 ## Validity limits
 
-A better result for MaleCNS does not prove that biological computation transfers generally.
-A worse result does not show that the connectome lacks useful computation.
-Results depend on graph filters, dynamics, input and output populations, teacher quality, optimization, and baseline fairness.
-The web viewer lets a human play Black while the frozen graph answers automatically as White.
-The activity strip shows FlyGo dynamics, not measured activity from a living fly.
+A better MaleCNS result does not prove that biological computation transfers generally.
+A worse result does not prove that the connectome lacks useful computation.
+Results depend on graph selection, dynamics, teacher quality, features, optimization, model capacity, search, and baseline fairness.
+The browser activity strip shows FlyGo state, not measured activity from a living fly.
+The committed untrained bundle is a software demonstration and is not an experiment result.
