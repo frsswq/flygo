@@ -22,22 +22,29 @@ The constraints are training data, compute for teacher labelling, and the effici
 
 ### Graph
 
+| Property | Bundled sample | Selected circuit, 500 neurons | Selected circuit, 1000 neurons |
+| --- | ---: | ---: | ---: |
+| Neurons | 461 | 500 | 1000 |
+| Directed connections | 605 | 22,502 | 53,332 |
+| Neurons with no outgoing connection | 304 | 2 | 4 |
+| Largest strongly connected component | 14 | 498 | 996 |
+
+The bundled graph is a deterministic sensory-path sample, and it is unrepresentative.
+304 of its 461 neurons cannot send activity onward, and its largest strongly connected component holds 14 neurons.
+
+The prepared graph is far better connected.
+`flygo select-circuit` produced the circuit columns above from `data/processed/malecns-traced-w5.parquet` in 25 seconds.
+A 500-neuron circuit holds a 498-neuron strongly connected core.
+
+Use a selected circuit for any claim about the recurrent core.
+Keep the bundled sample for the browser demonstration and integration tests, where size matters more than connectivity.
+
+Model size is unchanged by circuit selection:
+
 | Property | Value |
 | --- | ---: |
-| Neurons | 461 |
-| Directed connections | 605 |
-| Neurons with no outgoing connection | 304 |
-| Largest strongly connected component | 14 neurons |
 | Trainable parameters at 19x19 | 500,646 |
 | Recurrent edge accumulations per evaluation | 4,840 |
-
-The bundled graph is a deterministic sensory-path sample.
-304 of 461 neurons cannot send activity onward through connectome edges.
-The largest strongly connected component holds 14 neurons.
-The recurrent core is therefore small, although every neuron keeps its own state.
-
-This artifact supports a demonstration and integration tests.
-It does not support a strong claim about the biological connectome, because most of the graph cannot carry activity forward.
 
 ### Browser compute
 
@@ -114,9 +121,9 @@ Open:
 - Run the sensitivity grid and the circuit size sweep on a real corpus.
   Neither has run, because both are gated on the corpus.
 
-Selection improves the wiring but cannot invent cycles.
-On the bundled sample the largest strongly connected component stays at 14 neurons at every requested size.
-Measure the real prepared graph before claiming a recurrent-depth effect.
+Selection works on the real prepared graph, not only on the bundled sample.
+Circuits of 500 and 1000 neurons keep a strongly connected core of 498 and 996 neurons, and only 2 and 4 neurons lose their outgoing edge.
+The bundled sample cannot be used for this claim, because its largest strongly connected component stays at 14 neurons at every size.
 
 The modeling choices remain assumptions.
 More recurrent steps can saturate the state or make neuron states too similar.

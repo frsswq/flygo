@@ -78,6 +78,7 @@ Use `--size 5` only for software and solver validation, not for a 19x19 strength
 The bundled sample is a demonstration, not a designed experiment input.
 304 of its 461 neurons have no outgoing connection, and its largest strongly connected component holds 14 neurons.
 A circuit fixes both problems by keeping one connected region of the prepared graph.
+The prepared graph is far better connected: a 500-neuron circuit holds 22,502 connections and a 498-neuron strongly connected core.
 
 Select circuits with one fixed rule, and never from validation or test results:
 
@@ -112,9 +113,9 @@ done
 Give every size the same seeds, epochs, batch size, learning rate, and value weight.
 The rule already removes a selection choice, so do not tune the rule after reading results.
 
-Selection improves the wiring but cannot invent cycles.
-On the bundled sample the largest strongly connected component stays at 14 neurons for every requested size.
-Re-measure it on the real prepared graph before making a claim about recurrent depth.
+Selection on the bundled sample cannot invent cycles: its largest strongly connected component stays at 14 neurons at every requested size.
+On the prepared graph the same rule keeps 498 of 500 neurons in one strongly connected component.
+Select circuits from the prepared graph for any recurrent-depth claim.
 
 ## Modeling sensitivity
 
