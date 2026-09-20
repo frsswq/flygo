@@ -30,6 +30,7 @@ Open <http://127.0.0.1:5173>.
 You play Black on a 19x19 board.
 A Web Worker gives FlyGo one second of policy-value MCTS for each reply.
 The interface also provides 5x5 for exact rules and solver validation.
+The Self-play button makes FlyGo take both colours until two passes end the game.
 
 ## Train and benchmark
 

@@ -16,49 +16,64 @@ const App = () => {
     play,
     reset,
     selectSize,
+    selfPlay,
     size,
     status,
+    toggleSelfPlay,
   } = useFlyGoGame();
 
   const passAction = passActionFor(size);
-  const canPass = !isLoading && !gameOver && legalActions.includes(passAction);
+  const canPass =
+    !(isLoading || selfPlay) && !gameOver && legalActions.includes(passAction);
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-4 p-4">
       <GoBoard
         activity={activity}
         board={board}
-        disabled={isLoading || gameOver}
+        disabled={isLoading || gameOver || selfPlay}
         lastMove={lastMove}
         legalActions={legalActions}
         onPlay={play}
         size={size}
       />
 
-      <div className="grid w-full max-w-lg grid-cols-[1fr_minmax(0,auto)_1fr] items-center gap-3">
-        <select
-          aria-label="Board size"
-          className="border-input bg-background h-8 justify-self-start rounded-md border px-2 text-sm"
-          onChange={(event) => selectSize(Number(event.target.value))}
-          value={size}
-        >
-          {BOARD_SIZES.map((option) => (
-            <option key={option} value={option}>
-              {option}x{option}
-            </option>
-          ))}
-        </select>
+      <p
+        aria-live="polite"
+        className={cn(
+          "text-muted-foreground w-full max-w-lg truncate text-center text-sm",
+          { "text-destructive": error !== null }
+        )}
+      >
+        {status}
+      </p>
 
-        <p
-          aria-live="polite"
-          className={cn("text-muted-foreground truncate text-center text-sm", {
-            "text-destructive": error !== null,
-          })}
-        >
-          {status}
-        </p>
+      <div className="flex w-full max-w-lg items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <select
+            aria-label="Board size"
+            className="border-input bg-background h-8 rounded-md border px-2 text-sm"
+            onChange={(event) => selectSize(Number(event.target.value))}
+            value={size}
+          >
+            {BOARD_SIZES.map((option) => (
+              <option key={option} value={option}>
+                {option}x{option}
+              </option>
+            ))}
+          </select>
 
-        <div className="flex items-center gap-2 justify-self-end">
+          <Button
+            onClick={toggleSelfPlay}
+            size="sm"
+            type="button"
+            variant={selfPlay ? "default" : "outline"}
+          >
+            {selfPlay ? "Stop" : "Self-play"}
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
           <Button onClick={reset} size="sm" type="button" variant="ghost">
             New
           </Button>
