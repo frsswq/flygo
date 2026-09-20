@@ -133,6 +133,8 @@ def write_web_bundle(
         from flygo.training import load_policy
 
         trained_policy, checkpoint_metadata = load_policy(policy_checkpoint, connectome)
+        if not isinstance(trained_policy, ConnectomePolicy):
+            raise ValueError("Browser export requires a connectome policy")
         policies[trained_policy.size] = trained_policy
         steps = int(checkpoint_metadata["steps"])
     output.mkdir(parents=True, exist_ok=True)

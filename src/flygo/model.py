@@ -112,3 +112,53 @@ def comparison_table(scores: dict[str, list[float]]) -> pl.DataFrame:
             "accuracy": [score for values in scores.values() for score in values],
         }
     )
+
+
+@dataclass
+class DensePolicy:
+    """A bias-free linear model or one-hidden-layer tanh MLP with the same targets.
+
+    A missing encoder selects the linear model.
+    Matching hidden width to the connectome node count exactly matches parameter count.
+    """
+
+    encoder: NDArray[np.float32] | None
+    readout: NDArray[np.float32]
+    value_readout: NDArray[np.float32]
+    size: int
+
+    @classmethod
+    def initialize(
+        cls, *, size: int = DEFAULT_BOARD_SIZE, hidden_count: int | None = None, seed: int = 7
+    ) -> DensePolicy:
+        if hidden_count is not None and hidden_count < 1:
+            raise ValueError("Hidden width must be positive")
+        generator = np.random.default_rng(seed)
+        features = 2 * size * size + 1
+        encoder = (
+            None
+            if hidden_count is None
+            else generator.normal(0, 0.15, (hidden_count, features)).astype(np.float32)
+        )
+        width = features if hidden_count is None else hidden_count
+        return cls(
+            encoder,
+            generator.normal(0, 0.05, (size * size + 1, width)).astype(np.float32),
+            generator.normal(0, 0.05, width).astype(np.float32),
+            size,
+        )
+
+    def evaluate(self, position: Position) -> tuple[NDArray[np.float32], float]:
+        if position.size != self.size:
+            raise ValueError("Policy and position board sizes differ")
+        features = position.features()
+        activity = features if self.encoder is None else np.tanh(self.encoder @ features)
+        return self.readout @ activity, float(np.tanh(self.value_readout @ activity))
+
+
+type Policy = ConnectomePolicy | DensePolicy
+
+
+def policy_parameters(model: Policy) -> tuple[NDArray[np.float32], ...]:
+    heads = (model.readout, model.value_readout)
+    return heads if model.encoder is None else (model.encoder, *heads)

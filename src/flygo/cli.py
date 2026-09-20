@@ -78,6 +78,21 @@ def parser() -> argparse.ArgumentParser:
     train.add_argument("--steps", type=int, default=8)
     train.add_argument("--seed", type=int, default=7)
 
+    experiment = commands.add_parser("experiment", help="Run matched multi-seed research controls")
+    experiment.add_argument("--dataset", type=Path, required=True)
+    experiment.add_argument(
+        "--graph", type=Path, default=ASSET_DIRECTORY / "malecns-sample.parquet"
+    )
+    experiment.add_argument("--output", type=Path, required=True)
+    experiment.add_argument("--size", type=int, choices=(5, 19), default=19)
+    experiment.add_argument("--seeds", type=int, nargs="+", default=[7, 17, 27])
+    experiment.add_argument("--epochs", type=int, default=10)
+    experiment.add_argument("--batch-size", type=int, default=128)
+    experiment.add_argument("--learning-rate", type=float, default=0.001)
+    experiment.add_argument("--steps", type=int, default=8)
+    experiment.add_argument("--value-weight", type=float, default=1.0)
+    experiment.add_argument("--final-test", action="store_true")
+
     benchmark = commands.add_parser("benchmark", help="Run a paired FlyGo Elo league")
     benchmark.add_argument("--policy", type=Path, required=True)
     benchmark.add_argument("--output", type=Path, required=True)
@@ -167,20 +182,22 @@ def main() -> None:
         from dataclasses import asdict
 
         from flygo.connectome import load_connectome
-        from flygo.training import load_training_data, save_policy, train_policy_value
+        from flygo.model import ConnectomePolicy
+        from flygo.training import fit_policy, load_training_data, save_policy, selected_epoch
 
         connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
         training = load_training_data(arguments.dataset / "train.npz", size=arguments.size)
         validation = load_training_data(arguments.dataset / "validation.npz", size=arguments.size)
-        policy, history = train_policy_value(
-            connectome,
+        policy = ConnectomePolicy.initialize(
+            connectome, size=arguments.size, steps=arguments.steps, seed=arguments.seed
+        )
+        history = fit_policy(
+            policy,
             training,
-            size=arguments.size,
             validation=validation,
             epochs=arguments.epochs,
             batch_size=arguments.batch_size,
             learning_rate=arguments.learning_rate,
-            steps=arguments.steps,
             seed=arguments.seed,
         )
         dataset_manifest = arguments.dataset / "manifest.json"
@@ -191,14 +208,33 @@ def main() -> None:
             "learning_rate": arguments.learning_rate,
             "seed": arguments.seed,
             "history": [asdict(epoch) for epoch in history],
+            "selected_epoch": selected_epoch(history),
         }
         save_policy(arguments.output, policy, metadata=metadata)
-        final = history[-1]
+        final = history[selected_epoch(history) - 1]
         print(
             f"{arguments.output}: {len(history)} epochs, "
             f"validation policy={final.validation_policy_loss}, "
             f"value={final.validation_value_loss}"
         )
+    elif arguments.command == "experiment":
+        from flygo.research import ResearchConfig, run_research
+
+        try:
+            config = ResearchConfig(
+                size=arguments.size,
+                seeds=tuple(arguments.seeds),
+                epochs=arguments.epochs,
+                batch_size=arguments.batch_size,
+                learning_rate=arguments.learning_rate,
+                steps=arguments.steps,
+                value_weight=arguments.value_weight,
+                final_test=arguments.final_test,
+            )
+            report = run_research(arguments.dataset, arguments.graph, arguments.output, config)
+        except (ValueError, OSError) as error:
+            raise SystemExit(str(error)) from error
+        print(f"{arguments.output / 'report.json'}: {len(report['runs'])} matched runs")
     elif arguments.command == "benchmark":
         import hashlib
 

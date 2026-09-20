@@ -13,7 +13,7 @@ from typing import Any
 import numpy as np
 
 from flygo.go import Position
-from flygo.model import ConnectomePolicy
+from flygo.model import Policy
 from flygo.search import search
 
 type ActionSelector = Callable[[Position, int], int]
@@ -54,7 +54,7 @@ def random_agent(*, seed: int) -> Agent:
     return Agent("random", lambda position, _passes: generator.choice(position.legal_actions()))
 
 
-def greedy_agent(policy: ConnectomePolicy) -> Agent:
+def greedy_agent(policy: Policy) -> Agent:
     def select(position: Position, _passes: int) -> int:
         logits, _ = policy.evaluate(position)
         return max(position.legal_actions(), key=lambda action: (float(logits[action]), -action))
@@ -63,7 +63,7 @@ def greedy_agent(policy: ConnectomePolicy) -> Agent:
 
 
 def mcts_agent(
-    policy: ConnectomePolicy,
+    policy: Policy,
     *,
     time_limit: float | None = None,
     simulations: int | None = None,

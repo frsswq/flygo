@@ -62,4 +62,12 @@ ignore_names = [
   "ruleset",
   "superclass",
   "topology",
+  # Research dataclass fields are serialized through dataclasses.asdict.
+  "changed_target_edges",
+  "trainable_parameters",
+  "optimizer_updates",
+  "selected_epoch",
+  "edge_accumulations_per_evaluation",
+  "peak_traced_bytes",
+  "evaluation_seconds_per_example",
 ]

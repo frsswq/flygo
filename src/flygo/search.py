@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from flygo.go import Position
-from flygo.model import ConnectomePolicy
+from flygo.model import Policy
 
 
 @dataclass
@@ -56,7 +56,7 @@ def _terminal_value(node: SearchNode) -> float:
     return float(winner * node.position.to_play)
 
 
-def _expand(node: SearchNode, policy: ConnectomePolicy) -> float:
+def _expand(node: SearchNode, policy: Policy) -> float:
     if node.terminal:
         return _terminal_value(node)
     logits, value = policy.evaluate(node.position)
@@ -82,7 +82,7 @@ def _select(node: SearchNode, exploration: float) -> SearchNode:
     return child
 
 
-def _simulate(root: SearchNode, policy: ConnectomePolicy, exploration: float) -> None:
+def _simulate(root: SearchNode, policy: Policy, exploration: float) -> None:
     path = [root]
     node = root
     while node.children and not node.terminal:
@@ -97,7 +97,7 @@ def _simulate(root: SearchNode, policy: ConnectomePolicy, exploration: float) ->
 
 def search(
     position: Position,
-    policy: ConnectomePolicy,
+    policy: Policy,
     *,
     consecutive_passes: int = 0,
     time_limit: float | None = 1.0,

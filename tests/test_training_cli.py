@@ -7,6 +7,7 @@ import numpy as np
 from flygo.connectome import load_connectome
 from flygo.export import ASSET_DIRECTORY, write_web_bundle
 from flygo.go import Position
+from flygo.model import ConnectomePolicy
 from flygo.policy_fixture import build_policy_conformance
 from flygo.training import load_policy
 
@@ -49,6 +50,7 @@ def test_cli_checkpoint_inference_uses_the_training_steps(tmp_path: Path) -> Non
     )
     graph = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
     policy, metadata = load_policy(checkpoint, graph)
+    assert isinstance(policy, ConnectomePolicy)
     # With one step and a zero initial state, no recurrent drive has arrived.
     expected_activity = np.tanh(np.tanh(policy.encoder @ position.features()))
     logits, value = policy.evaluate(position)
