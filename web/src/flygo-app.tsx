@@ -52,7 +52,7 @@ const App = () => {
         <div className="flex items-center gap-2">
           <select
             aria-label="Board size"
-            className="border-input bg-background h-8 rounded-md border px-2 text-sm"
+            className="border-input bg-background h-7 rounded-md border px-2 text-xs"
             onChange={(event) => selectSize(Number(event.target.value))}
             value={size}
           >
