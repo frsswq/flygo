@@ -28,6 +28,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
 from flygo.connectome import FrozenConnectome
 from flygo.go import BOARD_SIZES, RULESET
 from flygo.model import ConnectomePolicy
@@ -106,9 +108,11 @@ def _policy_bytes(policy: ConnectomePolicy) -> bytes:
     return b"".join(chunks)
 
 
-def build_policies(connectome: FrozenConnectome) -> dict[int, ConnectomePolicy]:
+def build_policies(
+    connectome: FrozenConnectome, *, steps: int = DEFAULT_STEPS
+) -> dict[int, ConnectomePolicy]:
     return {
-        size: ConnectomePolicy.initialize(connectome, size=size, seed=POLICY_SEED)
+        size: ConnectomePolicy.initialize(connectome, size=size, seed=POLICY_SEED, steps=steps)
         for size in BOARD_SIZES
     }
 
@@ -123,7 +127,7 @@ def write_web_bundle(
     from flygo.connectome import load_connectome
 
     connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
-    policies = build_policies(connectome)
+    policies = build_policies(connectome, steps=steps)
     checkpoint_metadata: dict[str, Any] | None = None
     if policy_checkpoint is not None:
         from flygo.training import load_policy
@@ -144,7 +148,11 @@ def write_web_bundle(
             {
                 "size": size,
                 "file": path.name,
-                "seed": POLICY_SEED,
+                "seed": (
+                    checkpoint_metadata.get("seed", POLICY_SEED)
+                    if checkpoint_metadata is not None and size == checkpoint_metadata["size"]
+                    else POLICY_SEED
+                ),
                 "feature_count": policy.encoder.shape[1],
                 "action_count": policy.readout.shape[0],
                 "sha256": _sha256(path),
@@ -179,6 +187,62 @@ def write_web_bundle(
     }
     (output / MANIFEST_FILE).write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
+
+
+def load_web_policies(bundle: Path) -> dict[int, ConnectomePolicy]:
+    """Read the actual exported weights, rejecting unsupported or damaged bundles."""
+    from flygo.connectome import load_connectome
+
+    manifest = json.loads((bundle / MANIFEST_FILE).read_text())
+    connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
+    graph_bytes = (bundle / GRAPH_FILE).read_bytes()
+    if graph_bytes != _graph_bytes(connectome):
+        raise ValueError("Browser bundle has a different graph")
+    if hashlib.sha256(graph_bytes).hexdigest() != manifest["graph"]["sha256"]:
+        raise ValueError("Browser graph hash does not match the manifest")
+    dynamics = manifest["dynamics"]
+    steps = dynamics["steps"]
+    if type(steps) is not int or steps < 1:
+        raise ValueError("Browser steps must be a positive integer")
+    if dynamics != {
+        "activation": "tanh",
+        "normalization": "incoming weight sum",
+        "retention": 0.35,
+        "recurrent_gain": 0.9,
+        "steps": steps,
+    }:
+        raise ValueError("Unsupported browser dynamics")
+    policies: dict[int, ConnectomePolicy] = {}
+    for entry in manifest["policies"]:
+        size = entry["size"]
+        if size not in BOARD_SIZES or size in policies:
+            raise ValueError("Invalid or duplicate browser board size")
+        raw = (bundle / policy_file(size)).read_bytes()
+        nodes = connectome.node_count
+        features, actions = 2 * size * size + 1, size * size + 1
+        expected_header = (POLICY_MAGIC, POLICY_VERSION, size, nodes, features, actions)
+        if len(raw) != 24 + 4 * nodes * (features + actions + 1):
+            raise ValueError("Invalid browser policy length")
+        if struct.unpack_from("<IIIIII", raw) != expected_header:
+            raise ValueError("Invalid browser policy header")
+        if hashlib.sha256(raw).hexdigest() != entry["sha256"]:
+            raise ValueError("Browser policy hash does not match the manifest")
+        weights = np.frombuffer(raw, dtype="<f4", offset=24).copy()
+        if not np.all(np.isfinite(weights)):
+            raise ValueError("Browser weights must be finite")
+        encoder_end = nodes * features
+        readout_end = encoder_end + nodes * actions
+        policies[size] = ConnectomePolicy(
+            connectome,
+            weights[:encoder_end].reshape(nodes, features),
+            weights[encoder_end:readout_end].reshape(actions, nodes),
+            weights[readout_end:],
+            size,
+            steps,
+        )
+    if set(policies) != set(BOARD_SIZES):
+        raise ValueError("Browser bundle is missing a board size")
+    return policies
 
 
 def estimate_bundle(output: Path = DEFAULT_BUNDLE) -> dict[str, int]:

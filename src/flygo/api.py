@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 from typing import Annotated, Self
 
@@ -186,8 +187,8 @@ def simulate(
     """Report the policy reading of the position that ``request.moves`` reaches."""
     try:
         position = _replay(request.size, request.moves)
-        policy = _policies[request.size]
-        activity = policy.activity(position, steps=steps)
+        policy = replace(_policies[request.size], steps=steps)
+        activity = policy.activity(position)
         action = policy.choose_legal_action(position)
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error)) from error

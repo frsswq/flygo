@@ -5,11 +5,13 @@ import polars as pl
 import pytest
 
 from flygo.connectome import from_frame
+from flygo.model import ConnectomePolicy
 from flygo.training import (
     TrainingData,
     apply_symmetry,
     evaluate_loss,
     load_policy,
+    loss_and_gradients,
     save_policy,
     train_policy_value,
 )
@@ -60,7 +62,7 @@ def test_dihedral_symmetry_moves_features_policy_and_legality_together() -> None
 def test_training_reduces_policy_and_value_loss() -> None:
     data = examples()
     initial, _ = train_policy_value(graph(), data, size=5, epochs=1, batch_size=8, steps=2)
-    initial_loss = evaluate_loss(initial, data, steps=2)
+    initial_loss = evaluate_loss(initial, data)
 
     trained, history = train_policy_value(
         graph(),
@@ -71,7 +73,7 @@ def test_training_reduces_policy_and_value_loss() -> None:
         learning_rate=0.02,
         steps=2,
     )
-    trained_loss = evaluate_loss(trained, data, steps=2)
+    trained_loss = evaluate_loss(trained, data)
 
     assert len(history) == 30
     assert trained_loss[0] < initial_loss[0]
@@ -83,7 +85,7 @@ def test_checkpoint_is_bound_to_the_frozen_graph(tmp_path: Path) -> None:
     trained, _ = train_policy_value(connectome, examples(), size=5, epochs=1, steps=2)
     path = tmp_path / "policy.npz"
 
-    save_policy(path, trained, steps=2, metadata={"dataset": "fixture"})
+    save_policy(path, trained, metadata={"dataset": "fixture"})
     restored, metadata = load_policy(path, connectome)
 
     assert metadata["dataset"] == "fixture"
@@ -95,3 +97,24 @@ def test_checkpoint_is_bound_to_the_frozen_graph(tmp_path: Path) -> None:
     other = from_frame(pl.DataFrame({"pre": [1], "post": [2], "weight": [9]}))
     with pytest.raises(ValueError, match="different graph"):
         load_policy(path, other)
+
+
+def test_mean_loss_gradients_match_finite_differences_for_every_parameter() -> None:
+    model = ConnectomePolicy.initialize(graph(), size=5, steps=3)
+    data = examples(rows=4)
+    value_weight = 0.7
+    _, _, gradients = loss_and_gradients(model, data, value_weight=value_weight)
+    for parameter, gradient in zip(
+        (model.encoder, model.readout, model.value_readout), gradients, strict=True
+    ):
+        index = np.unravel_index(np.argmax(np.abs(gradient)), gradient.shape)
+        original = parameter[index].copy()
+        epsilon = 0.005
+        losses = []
+        for offset in (epsilon, -epsilon):
+            parameter[index] = original + offset
+            policy_loss, value_loss = evaluate_loss(model, data, value_weight=value_weight)
+            losses.append(policy_loss + value_weight * value_loss)
+        parameter[index] = original
+        numerical_gradient = (losses[0] - losses[1]) / (2 * epsilon)
+        np.testing.assert_allclose(gradient[index], numerical_gradient, rtol=0.01, atol=1e-4)

@@ -55,6 +55,8 @@ def load_training_data(path: Path, *, size: int) -> TrainingData:
         legal = archive["legal"].astype(np.bool_)
         policy = archive["policy"].astype(np.float32)
         value = archive["value"].astype(np.float32)
+    if features.ndim != 2:
+        raise ValueError("Features must be a matrix")
     rows = features.shape[0]
     feature_count = 2 * size * size + 1
     action_count = size * size + 1
@@ -135,13 +137,11 @@ def _recurrent_coefficients(connectome: FrozenConnectome) -> NDArray[np.float32]
 def _forward(
     policy: ConnectomePolicy,
     features: NDArray[np.float32],
-    *,
-    steps: int,
 ) -> tuple[NDArray[np.float32], list[NDArray[np.float32]], NDArray[np.float32]]:
     external = np.tanh(features @ policy.encoder.T).astype(np.float32)
     states = [np.zeros((features.shape[0], policy.connectome.node_count), dtype=np.float32)]
     coefficients = _recurrent_coefficients(policy.connectome)
-    for _ in range(steps):
+    for _ in range(policy.steps):
         drive = np.zeros_like(states[-1])
         np.add.at(
             drive.T,
@@ -152,14 +152,14 @@ def _forward(
     return external, states, coefficients
 
 
-def _loss_and_gradients(
+def loss_and_gradients(
     model: ConnectomePolicy,
     batch: TrainingData,
     *,
-    steps: int,
     value_weight: float,
 ) -> tuple[float, float, tuple[NDArray[np.float32], ...]]:
-    external, states, coefficients = _forward(model, batch.features, steps=steps)
+    """Return mean losses and analytic gradients for numerical verification and training."""
+    external, states, coefficients = _forward(model, batch.features)
     activity = states[-1]
     logits = activity @ model.readout.T
     masked = np.where(batch.legal, logits, -1e9)
@@ -182,7 +182,7 @@ def _loss_and_gradients(
     state_gradient += value_gradient[:, None] * model.value_readout[None, :]
 
     external_gradient = np.zeros_like(external)
-    for step in range(steps - 1, -1, -1):
+    for step in range(model.steps - 1, -1, -1):
         activation_gradient = state_gradient * (1 - states[step + 1] * states[step + 1])
         external_gradient += activation_gradient
         previous_gradient = 0.35 * activation_gradient
@@ -192,7 +192,7 @@ def _loss_and_gradients(
             (0.9 * activation_gradient[:, model.connectome.target_indices] * coefficients).T,
         )
         state_gradient = previous_gradient
-    encoder_gradient = ((external_gradient * (1 - external * external)).T @ batch.features) / rows
+    encoder_gradient = (external_gradient * (1 - external * external)).T @ batch.features
     return (
         policy_loss,
         value_loss,
@@ -208,14 +208,11 @@ def evaluate_loss(
     model: ConnectomePolicy,
     data: TrainingData,
     *,
-    steps: int = 8,
     value_weight: float = 1.0,
 ) -> tuple[float, float]:
     if data.features.shape[0] == 0:
         raise ValueError("Evaluation data is empty")
-    policy_loss, value_loss, _ = _loss_and_gradients(
-        model, data, steps=steps, value_weight=value_weight
-    )
+    policy_loss, value_loss, _ = loss_and_gradients(model, data, value_weight=value_weight)
     return policy_loss, value_loss
 
 
@@ -235,9 +232,17 @@ def train_policy_value(
     """Train the encoder and two heads with Adam and dihedral augmentation."""
     if train.features.shape[0] == 0:
         raise ValueError("Training data is empty")
-    if epochs < 1 or batch_size < 1 or learning_rate <= 0 or steps < 1:
+    if (
+        epochs < 1
+        or batch_size < 1
+        or not np.isfinite(learning_rate)
+        or learning_rate <= 0
+        or steps < 1
+        or not np.isfinite(value_weight)
+        or value_weight < 0
+    ):
         raise ValueError("Training hyperparameters must be positive")
-    model = ConnectomePolicy.initialize(connectome, size=size, seed=seed)
+    model = ConnectomePolicy.initialize(connectome, size=size, seed=seed, steps=steps)
     parameters = (model.encoder, model.readout, model.value_readout)
     first_moments = [np.zeros_like(parameter) for parameter in parameters]
     second_moments = [np.zeros_like(parameter) for parameter in parameters]
@@ -251,8 +256,8 @@ def train_policy_value(
         for start in range(0, permutation.size, batch_size):
             indices = permutation[start : start + batch_size]
             batch = _augment_batch(train, indices, size=size, generator=generator)
-            policy_loss, value_loss, gradients = _loss_and_gradients(
-                model, batch, steps=steps, value_weight=value_weight
+            policy_loss, value_loss, gradients = loss_and_gradients(
+                model, batch, value_weight=value_weight
             )
             update += 1
             for parameter, gradient, first, second in zip(
@@ -270,9 +275,7 @@ def train_policy_value(
             value_total += value_loss * indices.size
         validation_losses = None
         if validation is not None and validation.features.shape[0]:
-            validation_losses = evaluate_loss(
-                model, validation, steps=steps, value_weight=value_weight
-            )
+            validation_losses = evaluate_loss(model, validation, value_weight=value_weight)
         history.append(
             EpochMetrics(
                 epoch,
@@ -289,16 +292,15 @@ def save_policy(
     path: Path,
     policy: ConnectomePolicy,
     *,
-    steps: int,
     metadata: dict[str, Any] | None = None,
 ) -> None:
     """Write a portable, graph-bound policy checkpoint atomically."""
     payload = {
+        **(metadata or {}),
         "version": CHECKPOINT_VERSION,
         "size": policy.size,
-        "steps": steps,
+        "steps": policy.steps,
         "graph_sha256": graph_sha256(policy.connectome),
-        **(metadata or {}),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
@@ -339,4 +341,9 @@ def load_policy(
         raise ValueError("Checkpoint policy readout shape is invalid")
     if value_readout.shape != (connectome.node_count,):
         raise ValueError("Checkpoint value readout shape is invalid")
-    return ConnectomePolicy(connectome, encoder, readout, value_readout, size), metadata
+    steps = metadata.get("steps")
+    if type(steps) is not int or steps < 1:
+        raise ValueError("Checkpoint steps must be a positive integer")
+    if not all(np.all(np.isfinite(array)) for array in (encoder, readout, value_readout)):
+        raise ValueError("Checkpoint weights must be finite")
+    return ConnectomePolicy(connectome, encoder, readout, value_readout, size, steps), metadata

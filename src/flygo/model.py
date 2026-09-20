@@ -21,6 +21,7 @@ class ConnectomePolicy:
     readout: NDArray[np.float32]
     value_readout: NDArray[np.float32]
     size: int = DEFAULT_BOARD_SIZE
+    steps: int = 8
 
     @classmethod
     def initialize(
@@ -29,7 +30,10 @@ class ConnectomePolicy:
         *,
         size: int = DEFAULT_BOARD_SIZE,
         seed: int = 7,
+        steps: int = 8,
     ) -> ConnectomePolicy:
+        if steps < 1:
+            raise ValueError("Simulation steps must be positive")
         generator = np.random.default_rng(seed)
         feature_count = 2 * size * size + 1
         encoder = generator.normal(0, 0.15, (connectome.node_count, feature_count))
@@ -41,17 +45,18 @@ class ConnectomePolicy:
             readout.astype(np.float32),
             value_readout.astype(np.float32),
             size,
+            steps,
         )
 
     @property
     def action_count(self) -> int:
         return self.size * self.size + 1
 
-    def activity(self, position: Position, *, steps: int = 8) -> NDArray[np.float32]:
+    def activity(self, position: Position) -> NDArray[np.float32]:
         if position.size != self.size:
             raise ValueError(f"This policy plays {self.size}x{self.size}, not {position.size}")
         external_input = np.tanh(self.encoder @ position.features()).astype(np.float32)
-        return self.connectome.run(external_input, steps=steps)
+        return self.connectome.run(external_input, steps=self.steps)
 
     def logits(self, position: Position) -> NDArray[np.float32]:
         return self.readout @ self.activity(position)

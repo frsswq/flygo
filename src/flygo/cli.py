@@ -192,7 +192,7 @@ def main() -> None:
             "seed": arguments.seed,
             "history": [asdict(epoch) for epoch in history],
         }
-        save_policy(arguments.output, policy, steps=arguments.steps, metadata=metadata)
+        save_policy(arguments.output, policy, metadata=metadata)
         final = history[-1]
         print(
             f"{arguments.output}: {len(history)} epochs, "

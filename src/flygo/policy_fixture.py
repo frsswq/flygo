@@ -17,13 +17,11 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
-from flygo.connectome import load_connectome
 from flygo.export import (
-    ASSET_DIRECTORY,
     DEFAULT_BUNDLE,
     GRAPH_FILE,
     POLICY_SEED,
-    build_policies,
+    load_web_policies,
     policy_file,
     read_graph_header,
 )
@@ -63,12 +61,9 @@ def _rounded(values: NDArray[np.float32]) -> list[float]:
 
 def build_policy_conformance(
     bundle: Path = DEFAULT_BUNDLE,
-    *,
-    steps: int = 8,
 ) -> dict[str, Any]:
     """Build the fixture from the Python engine and the exported binaries."""
-    connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
-    policies = build_policies(connectome)
+    policies = load_web_policies(bundle)
     cases: list[dict[str, Any]] = []
 
     for size in BOARD_SIZES:
@@ -76,7 +71,7 @@ def build_policy_conformance(
             moves = _random_moves(size, length, RANDOM_SEED + size * 100 + index)
             position = _replay(size, moves)
             policy = policies[size]
-            activity = policy.activity(position, steps=steps)
+            activity = policy.activity(position)
             logits = policy.logits(position)
             cases.append(
                 {
@@ -103,7 +98,7 @@ def build_policy_conformance(
             }
             for size in BOARD_SIZES
         },
-        "steps": steps,
+        "steps": policies[BOARD_SIZES[0]].steps,
     }
 
 
