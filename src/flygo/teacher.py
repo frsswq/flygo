@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from flygo.dataset import GameRecord, sample_id
+from flygo.go import komi_for
 
 _GTP_COLUMNS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
 
@@ -47,11 +48,13 @@ def katago_queries(
     *,
     visits: int,
     rules: str = "tromp-taylor",
-    komi: float = 7.5,
+    stride: int = 1,
 ) -> Iterable[dict[str, Any]]:
     """Yield one versionable KataGo JSON analysis query per complete game."""
     if visits < 1:
         raise ValueError("visits must be positive")
+    if stride < 1:
+        raise ValueError("stride must be positive")
     for game in games:
         moves: list[list[str]] = []
         player = "B"
@@ -62,10 +65,10 @@ def katago_queries(
             "id": game.game_id,
             "moves": moves,
             "rules": rules,
-            "komi": komi,
+            "komi": komi_for(game.size),
             "boardXSize": game.size,
             "boardYSize": game.size,
-            "analyzeTurns": list(range(len(game.moves))),
+            "analyzeTurns": list(range(0, len(game.moves), stride)),
             "maxVisits": visits,
             "includePolicy": True,
         }
@@ -76,9 +79,10 @@ def write_katago_queries(
     output: Path,
     *,
     visits: int,
+    stride: int = 1,
 ) -> int:
     """Write KataGo JSON Lines input and return the query count."""
-    queries = list(katago_queries(games, visits=visits))
+    queries = list(katago_queries(games, visits=visits, stride=stride))
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text("".join(json.dumps(query) + "\n" for query in queries))
     return len(queries)

@@ -20,7 +20,8 @@ Create one asynchronous analysis query per complete game:
 uv run flygo teacher-queries \
   --sgf data/sgf \
   --output data/teacher/queries.jsonl \
-  --visits 256
+  --visits 256 \
+  --stride 1
 ```
 
 Run a fixed KataGo binary, network, and analysis configuration:
@@ -34,6 +35,9 @@ katago analysis \
 ```
 
 Record the KataGo version, network hash, configuration hash, GPU type, and command.
+For a small pilot, increase `--stride` to analyze fewer positions without removing move history.
+Use the same stride when building the dataset.
+Queries use the board's fixed komi: 7.5 for 19x19 and zero for 5x5 validation.
 KataGo can return positions out of order, so FlyGo joins results by game ID and turn number.
 
 KataGo reports win rates from the perspective configured by `reportAnalysisWinratesAs`.
@@ -59,7 +63,8 @@ uv run flygo build-dataset \
   --teacher data/teacher/targets.jsonl \
   --output data/datasets/teacher-19 \
   --size 19 \
-  --stride 1
+  --stride 1 \
+  --require-teacher
 ```
 
 FlyGo assigns complete games to deterministic 80/10/10 train, validation, and test splits.
@@ -68,7 +73,9 @@ Each NPZ split contains board features, legal-action masks, policy targets, valu
 The manifest records hashes, counts, rules, split logic, and teacher provenance.
 
 A teacher target replaces the human move and game-result value for that position.
-A position without a teacher target keeps a one-hot human policy and final game result.
+With `--require-teacher`, missing labels stop the build before it writes any files.
+This check includes sampled positions that deduplication would later remove.
+Without this flag, a position without a teacher target keeps a one-hot human policy and final game result.
 Training applies one of eight square-board symmetries dynamically.
 
 Use `--stride` to sample every Nth position when building an initial dataset.

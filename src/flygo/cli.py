@@ -52,11 +52,13 @@ def parser() -> argparse.ArgumentParser:
     dataset.add_argument("--size", type=int, default=19)
     dataset.add_argument("--stride", type=int, default=1)
     dataset.add_argument("--teacher", type=Path)
+    dataset.add_argument("--require-teacher", action="store_true")
 
     queries = commands.add_parser("teacher-queries", help="Write KataGo analysis JSON Lines")
     queries.add_argument("--sgf", type=Path, nargs="+", required=True)
     queries.add_argument("--output", type=Path, required=True)
     queries.add_argument("--visits", type=int, default=256)
+    queries.add_argument("--stride", type=int, default=1)
 
     teacher = commands.add_parser("teacher-import", help="Import KataGo analysis JSON Lines")
     teacher.add_argument("--sgf", type=Path, nargs="+", required=True)
@@ -152,6 +154,7 @@ def main() -> None:
             size=arguments.size,
             stride=arguments.stride,
             teacher_path=arguments.teacher,
+            require_teacher=arguments.require_teacher,
         )
         print(
             f"{arguments.output}: {result.accepted_games} games, "
@@ -163,7 +166,9 @@ def main() -> None:
         from flygo.teacher import write_katago_queries
 
         games = load_sgf_games(_sgf_paths(arguments.sgf))
-        count = write_katago_queries(games, arguments.output, visits=arguments.visits)
+        count = write_katago_queries(
+            games, arguments.output, visits=arguments.visits, stride=arguments.stride
+        )
         print(f"{arguments.output}: {count} queries")
     elif arguments.command == "teacher-import":
         from flygo.dataset import load_sgf_games

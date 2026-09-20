@@ -234,6 +234,7 @@ def build_dataset(
     size: int = 19,
     stride: int = 1,
     teacher_path: Path | None = None,
+    require_teacher: bool = False,
 ) -> DatasetSummary:
     """Write split NPZ files and a provenance manifest atomically."""
     if size not in BOARD_SIZES:
@@ -244,6 +245,16 @@ def build_dataset(
     game_ids = [game.game_id for game in games]
     if len(game_ids) != len(set(game_ids)):
         raise ValueError("Duplicate games were supplied")
+    if require_teacher:
+        expected = {
+            sample_id(game.game_id, turn)
+            for game in games
+            if game.size == size
+            for turn in range(0, len(game.moves), stride)
+        }
+        missing = expected - teacher.keys()
+        if missing:
+            raise ValueError(f"Missing teacher targets for {len(missing)} sampled positions")
     split_rows: dict[str, list[tuple[Any, ...]]] = {name: [] for name in SPLITS}
     seen_positions: set[bytes] = set()
     accepted = 0
@@ -285,6 +296,7 @@ def build_dataset(
         "duplicate_examples": duplicates,
         "rejected_games": rejected,
         "teacher_targets": len(teacher),
+        "require_teacher": require_teacher,
         "game_set_sha256": hashlib.sha256("\n".join(sorted(game_ids)).encode()).hexdigest(),
         "teacher_sha256": (
             hashlib.sha256(teacher_path.read_bytes()).hexdigest() if teacher_path else None

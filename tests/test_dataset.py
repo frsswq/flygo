@@ -118,3 +118,46 @@ def test_katago_protocol_round_trip(tmp_path: Path) -> None:
     assert target.policy == {300: 0.75, 60: 0.25}
     assert target.value == 0.5
     assert targets[sample_id(game.game_id, 1)].value == -0.5
+
+
+def test_teacher_queries_sample_turns_without_losing_move_history(tmp_path: Path) -> None:
+    games = parse_sgf_collection(SGF)
+    path = tmp_path / "queries.jsonl"
+    write_katago_queries(games, path, visits=256, stride=2)
+    query = json.loads(path.read_text())
+    assert query["analyzeTurns"] == [0, 2]
+    assert len(query["moves"]) == 3
+    assert query["komi"] == 7.5
+    with pytest.raises(ValueError, match="stride"):
+        write_katago_queries(games, path, visits=256, stride=0)
+
+
+def test_teacher_queries_use_validation_board_komi(tmp_path: Path) -> None:
+    games = parse_sgf_collection(b"(;SZ[5]KM[0]RE[B+R];B[aa];W[bb])")
+    path = tmp_path / "queries.jsonl"
+    write_katago_queries(games, path, visits=16)
+    assert json.loads(path.read_text())["komi"] == 0
+
+
+def test_required_teacher_covers_every_sample_before_writing(tmp_path: Path) -> None:
+    (game,) = parse_sgf_collection(SGF)
+    targets = tmp_path / "targets.jsonl"
+    targets.write_text(
+        "".join(
+            json.dumps(
+                {"sample_id": sample_id(game.game_id, turn), "policy": [[action, 1]], "value": 0}
+            )
+            + "\n"
+            for turn, action in ((0, 300), (2, 73))
+        )
+    )
+    output = tmp_path / "dataset"
+    result = build_dataset([game], output, stride=2, teacher_path=targets, require_teacher=True)
+    assert result.examples == 2
+    manifest = (output / "manifest.json").read_bytes()
+    with pytest.raises(ValueError, match="Missing teacher targets for 1 sampled positions"):
+        build_dataset([game], output, teacher_path=targets, require_teacher=True)
+    assert (output / "manifest.json").read_bytes() == manifest
+    with pytest.raises(ValueError, match="Missing teacher targets"):
+        build_dataset([game], tmp_path / "missing", require_teacher=True)
+    assert not (tmp_path / "missing").exists()
