@@ -78,13 +78,15 @@ make check
 ```
 
 The command runs Ruff formatting and linting, vulture, BasedPyright, pytest, Ultracite, TypeScript, knip, and Vitest.
-It currently includes rules, SGF, dataset, teacher, training, checkpoint, search, Elo, research controls, pilot scripts, API, binary, and browser conformance coverage.
+It currently includes rules, SGF, connectome preparation, circuit selection, dataset, teacher, training, checkpoint, search, Elo, research controls, pilot scripts, API, binary, and browser conformance coverage.
 
 Build the FastAPI-mounted production artifact with:
 
 ```bash
 make build
 ```
+
+The `src/flygo/static/` output is committed and the FastAPI viewer serves it, so rebuild it whenever `web/` changes and commit the result.
 
 Build the root-mounted static artifact with:
 
