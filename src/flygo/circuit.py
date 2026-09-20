@@ -11,6 +11,7 @@ has at least one connection to the rest of the circuit.
 
 from __future__ import annotations
 
+import heapq
 import json
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
@@ -24,6 +25,9 @@ from flygo.official_data import file_sha256
 RULE = "strongest-first connected growth"
 RULE_VERSION = 1
 DEFAULT_NODE_COUNTS = (250, 500, 1000)
+
+type Strength = dict[int, float]
+type Neighbours = dict[int, dict[int, float]]
 
 
 @dataclass(frozen=True)
@@ -54,12 +58,10 @@ def validate_edges(edges: pl.DataFrame) -> None:
         raise ValueError("Graph weights must be finite and positive")
 
 
-def _adjacency(
-    edges: pl.DataFrame,
-) -> tuple[dict[int, float], dict[int, dict[int, float]]]:
+def _adjacency(edges: pl.DataFrame) -> tuple[Strength, Neighbours]:
     """Return incident strength and summed neighbour weight for every node."""
-    strength: dict[int, float] = {}
-    neighbours: dict[int, dict[int, float]] = {}
+    strength: Strength = {}
+    neighbours: Neighbours = {}
     sources = edges["pre"].to_list()
     targets = edges["post"].to_list()
     weights: list[float] = edges["weight"].cast(pl.Float64).to_list()
@@ -73,27 +75,101 @@ def _adjacency(
     return strength, neighbours
 
 
+def prepare(edges: pl.DataFrame) -> tuple[Strength, Neighbours]:
+    """Validate the frame and measure it once, for repeated selection."""
+    validate_edges(edges)
+    return _adjacency(edges)
+
+
+def _strongest(strength: Strength) -> int:
+    return min(strength, key=lambda node: (-strength[node], node))
+
+
+def grow(
+    strength: Strength,
+    neighbours: Neighbours,
+    *,
+    limit: int | None = None,
+    allow_fallback: bool = True,
+) -> tuple[list[int], int | None]:
+    """Grow the selection order and report where the first component ends.
+
+    Return the first ``limit`` nodes of the growth order, or every node when
+    ``limit`` is ``None``, together with the connected core size.
+    With ``allow_fallback`` the walk restarts from the strongest unselected
+    neuron after a component ends, so the order covers every node.
+    Without it the walk stops at the component edge, which reports the
+    connected core size and keeps a circuit inside one component.
+    The core size is ``None`` when the limit stops the walk inside one
+    component, because the full core was never reached.
+    """
+    seed = _strongest(strength)
+    remaining = set(strength)
+    remaining.discard(seed)
+    fallback: list[tuple[float, int]] = []
+    if allow_fallback:
+        fallback = [(-strength[node], node) for node in remaining]
+        heapq.heapify(fallback)
+    scores: dict[int, float] = {}
+    frontier: list[tuple[float, float, int]] = []
+
+    def push(node: int, score: float) -> None:
+        scores[node] = score
+        heapq.heappush(frontier, (-score, -strength[node], node))
+
+    for neighbour, weight in neighbours[seed].items():
+        if neighbour in remaining:
+            push(neighbour, weight)
+
+    order = [seed]
+    core: int | None = None
+    while remaining and (limit is None or len(order) < limit):
+        node: int | None = None
+        while frontier:
+            negative_score, _, candidate = frontier[0]
+            if candidate not in remaining or scores.get(candidate) != -negative_score:
+                heapq.heappop(frontier)
+                continue
+            node = candidate
+            heapq.heappop(frontier)
+            break
+        if node is None:
+            if core is None:
+                core = len(order)
+            if not allow_fallback:
+                break
+            while fallback:
+                candidate = fallback[0][1]
+                if candidate in remaining:
+                    node = candidate
+                    break
+                heapq.heappop(fallback)
+            if node is None:
+                break
+        order.append(node)
+        remaining.discard(node)
+        scores.pop(node, None)
+        for neighbour, weight in neighbours[node].items():
+            if neighbour in remaining:
+                push(neighbour, scores.get(neighbour, 0.0) + weight)
+    if core is None and not remaining:
+        core = len(order)
+    return order, core
+
+
 def seed_node(edges: pl.DataFrame) -> int:
     """Return the strongest neuron, the one with the highest incident weight."""
-    validate_edges(edges)
-    strength, _ = _adjacency(edges)
-    return min(strength, key=lambda node: (-strength[node], node))
+    strength, _ = prepare(edges)
+    return _strongest(strength)
 
 
 def connected_core_size(edges: pl.DataFrame) -> int:
     """Return the neuron count of the connected component that holds the seed."""
-    validate_edges(edges)
-    _, neighbours = _adjacency(edges)
-    start = seed_node(edges)
-    seen = {start}
-    pending = [start]
-    while pending:
-        node = pending.pop()
-        for neighbour in neighbours[node]:
-            if neighbour not in seen:
-                seen.add(neighbour)
-                pending.append(neighbour)
-    return len(seen)
+    strength, neighbours = prepare(edges)
+    _, core = grow(strength, neighbours, allow_fallback=False)
+    if core is None:
+        raise ValueError("The connected core size is unavailable")
+    return core
 
 
 def growth_order(edges: pl.DataFrame) -> list[int]:
@@ -107,27 +183,8 @@ def growth_order(edges: pl.DataFrame) -> list[int]:
     The order does not depend on a target size, so larger circuits extend
     smaller ones.
     """
-    validate_edges(edges)
-    strength, neighbours = _adjacency(edges)
-    remaining = set(strength)
-    scores: dict[int, float] = {}
-    seed = seed_node(edges)
-    order = [seed]
-    remaining.discard(seed)
-    for neighbour, weight in neighbours[seed].items():
-        if neighbour in remaining:
-            scores[neighbour] = weight
-    while remaining:
-        if scores:
-            node = min(scores, key=lambda node: (-scores[node], -strength[node], node))
-        else:
-            node = min(remaining, key=lambda node: (-strength[node], node))
-        order.append(node)
-        remaining.discard(node)
-        scores.pop(node, None)
-        for neighbour, weight in neighbours[node].items():
-            if neighbour in remaining:
-                scores[neighbour] = scores.get(neighbour, 0.0) + weight
+    strength, neighbours = prepare(edges)
+    order, _ = grow(strength, neighbours)
     return order
 
 
@@ -184,31 +241,49 @@ def largest_component(edges: pl.DataFrame) -> int:
     return largest
 
 
+def _circuit_frame(edges: pl.DataFrame, kept: set[int]) -> pl.DataFrame:
+    members = sorted(kept)
+    return edges.filter(pl.col("pre").is_in(members) & pl.col("post").is_in(members))
+
+
+def _report(
+    selected: pl.DataFrame,
+    kept: set[int],
+    *,
+    requested_nodes: int,
+    seed: int,
+) -> SelectionReport:
+    sources = set(selected["pre"].to_list())
+    return SelectionReport(
+        requested_nodes=requested_nodes,
+        node_count=len(kept),
+        edge_count=selected.height,
+        seed_node=seed,
+        largest_component=largest_component(selected),
+        nodes_without_outgoing=sum(1 for node in kept if node not in sources),
+    )
+
+
 def select_circuit(edges: pl.DataFrame, *, node_count: int) -> tuple[pl.DataFrame, SelectionReport]:
     """Return one connected circuit of ``node_count`` neurons and its diagnostics."""
     if node_count < 2:
         raise ValueError("A circuit needs at least two nodes")
-    core = connected_core_size(edges)
-    if node_count > core:
-        raise ValueError(
-            f"The connected core of {seed_node(edges)} holds {core} nodes, not {node_count}"
-        )
-    kept = set(growth_order(edges)[:node_count])
-    members = sorted(kept)
-    selected = edges.filter(pl.col("pre").is_in(members) & pl.col("post").is_in(members))
+    strength, neighbours = prepare(edges)
+    seed = _strongest(strength)
+    order, core = grow(strength, neighbours, limit=node_count, allow_fallback=False)
+    if len(order) < node_count:
+        raise ValueError(f"The connected core of {seed} holds {core} nodes, not {node_count}")
+    kept = set(order)
+    selected = _circuit_frame(edges, kept)
     realised = set(selected["pre"].to_list()) | set(selected["post"].to_list())
     if realised != kept:
         raise ValueError("The selected node set is not connected")
-    sources = set(selected["pre"].to_list())
-    report = SelectionReport(
+    return selected, _report(
+        selected,
+        kept,
         requested_nodes=node_count,
-        node_count=len(kept),
-        edge_count=selected.height,
-        seed_node=seed_node(edges),
-        largest_component=largest_component(selected),
-        nodes_without_outgoing=sum(1 for node in kept if node not in sources),
+        seed=seed,
     )
-    return selected, report
 
 
 def write_circuits(
@@ -220,14 +295,23 @@ def write_circuits(
     """Write one circuit file per requested size and a selection manifest."""
     if not node_counts:
         raise ValueError("At least one circuit size is required")
+    if min(node_counts) < 2:
+        raise ValueError("A circuit needs at least two nodes")
     edges = pl.read_parquet(graph)
-    validate_edges(edges)
+    strength, neighbours = prepare(edges)
+    seed = _strongest(strength)
+    sizes = sorted(set(node_counts))
+    order, core = grow(strength, neighbours, limit=max(sizes), allow_fallback=False)
+    if len(order) < max(sizes):
+        raise ValueError(f"The connected core of {seed} holds {core} nodes, not {max(sizes)}")
     output.mkdir(parents=True, exist_ok=True)
     entries: list[dict[str, Any]] = []
-    for node_count in sorted(set(node_counts)):
-        selected, report = select_circuit(edges, node_count=node_count)
+    for node_count in sizes:
+        kept = set(order[:node_count])
+        selected = _circuit_frame(edges, kept)
         path = output / f"circuit-{node_count}.parquet"
         selected.write_parquet(path)
+        report = _report(selected, kept, requested_nodes=node_count, seed=seed)
         entries.append({"file": path.name, "sha256": file_sha256(path)} | asdict(report))
     manifest: dict[str, Any] = {
         "rule": RULE,
