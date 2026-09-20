@@ -46,6 +46,14 @@ def parser() -> argparse.ArgumentParser:
     prepare.add_argument("--output", type=Path, default=DEFAULT_GRAPH)
     prepare.add_argument("--minimum-weight", type=int, default=5)
 
+    circuit = commands.add_parser(
+        "select-circuit",
+        help="Select deterministic circuits from the prepared graph",
+    )
+    circuit.add_argument("--graph", type=Path, default=DEFAULT_GRAPH)
+    circuit.add_argument("--output", type=Path, default=Path("data/processed/circuits"))
+    circuit.add_argument("--nodes", type=int, nargs="+", default=[250, 500, 1000])
+
     dataset = commands.add_parser("build-dataset", help="Build split policy-value data from SGF")
     dataset.add_argument("--sgf", type=Path, nargs="+", required=True)
     dataset.add_argument("--output", type=Path, required=True)
@@ -144,6 +152,18 @@ def main() -> None:
             minimum_weight=arguments.minimum_weight,
         )
         print(arguments.output)
+    elif arguments.command == "select-circuit":
+        from flygo.circuit import write_circuits
+
+        try:
+            manifest = write_circuits(
+                arguments.graph,
+                arguments.output,
+                node_counts=arguments.nodes,
+            )
+        except (ValueError, OSError) as error:
+            raise SystemExit(str(error)) from error
+        print(f"{arguments.output / 'selection.json'}: {len(manifest['circuits'])} circuits")
     elif arguments.command == "build-dataset":
         from flygo.dataset import build_dataset, load_sgf_games
 
