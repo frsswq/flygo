@@ -9,6 +9,7 @@ FlyGo supplies all dynamics, Go representations, optimization, search, and evalu
 This is a topology-transfer experiment, not a biological simulation.
 
 The committed browser weights are an untrained demonstration until you export a trained checkpoint.
+The hosted build is at <https://gofly.farissaifuddin.com>.
 
 ## Install
 

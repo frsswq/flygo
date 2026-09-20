@@ -63,6 +63,38 @@ See the [Cloudflare Workers limits](https://developers.cloudflare.com/workers/pl
 
 ## Hostname
 
-Use the default Pages URL.
-A custom hostname is out of scope for now.
-Revisit it after the trained release.
+The production site is <https://gofly.farissaifuddin.com>.
+The default Pages URL <https://flygo.pages.dev> serves the same artifact.
+
+`gofly.farissaifuddin.com` is a custom domain of the `flygo` Pages project.
+The domain lives on the `farissaifuddin.com` zone in the same account.
+The zone holds one proxied record, `CNAME gofly -> flygo.pages.dev`.
+The apex `farissaifuddin.com` has no record.
+
+Order matters when the zone is new.
+Create the zone, copy its assigned nameservers to the registrar, and wait for the zone to become active.
+The Pages domain stays `pending` with `CNAME record not set` until then, and no certificate is issued.
+Force the check with the zone activation endpoint instead of waiting for the periodic run:
+
+```bash
+curl -X PUT -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+  "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/activation_check"
+```
+
+## Redeploy the browser build
+
+The Pages project is not connected to the repository.
+Deployments are manual, so a push alone does not update the site.
+
+```bash
+make static
+CLOUDFLARE_API_TOKEN=... CLOUDFLARE_ACCOUNT_ID=... \
+  npx wrangler@4 pages deploy web/dist --project-name flygo --branch main
+```
+
+Deploy after any change to `web/src` or `web/public/flygo/`.
+Verify the live artifact by comparing its manifest with the local build:
+
+```bash
+curl -s https://gofly.farissaifuddin.com/flygo/manifest.json | head -20
+```
