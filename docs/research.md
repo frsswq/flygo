@@ -73,6 +73,73 @@ The default graph is the bundled 461-neuron, 605-edge MaleCNS sample.
 Use `--graph PATH` to select another prepared graph before examining test results.
 Use `--size 5` only for software and solver validation, not for a 19x19 strength claim.
 
+## Select circuits before comparing sizes
+
+The bundled sample is a demonstration, not a designed experiment input.
+304 of its 461 neurons have no outgoing connection, and its largest strongly connected component holds 14 neurons.
+A circuit fixes both problems by keeping one connected region of the prepared graph.
+
+Select circuits with one fixed rule, and never from validation or test results:
+
+```bash
+uv run flygo select-circuit \
+  --graph data/processed/malecns-traced-w5.parquet \
+  --output data/processed/circuits \
+  --nodes 250 500 1000
+```
+
+The rule starts at the neuron with the highest incident weight.
+It then repeatedly adds the neuron with the strongest connection to the current set.
+Ties break by incident strength and then by the smallest body ID.
+Every selected neuron has at least one connection inside the circuit.
+The rule does not depend on the target size, so larger circuits extend smaller ones.
+
+`selection.json` records the rule, its version, the source hash, and each circuit's size, edge count, strongly connected size, and file hash.
+Report that manifest with any result.
+
+Compare sizes by running the same command against each circuit file:
+
+```bash
+for circuit in data/processed/circuits/circuit-*.parquet; do
+  uv run flygo experiment \
+    --dataset data/datasets/teacher-19 \
+    --graph "$circuit" \
+    --output "data/research/$(basename "$circuit" .parquet)" \
+    --seeds 7 17 27
+done
+```
+
+Give every size the same seeds, epochs, batch size, learning rate, and value weight.
+The rule already removes a selection choice, so do not tune the rule after reading results.
+
+Selection improves the wiring but cannot invent cycles.
+On the bundled sample the largest strongly connected component stays at 14 neurons for every requested size.
+Re-measure it on the real prepared graph before making a claim about recurrent depth.
+
+## Modeling sensitivity
+
+The dynamics and the weight interpretation are modeling choices, not biological facts.
+Test them as a separate grid, with the same dataset, seeds, and budgets as the main screen.
+
+```bash
+uv run flygo experiment \
+  --dataset data/datasets/teacher-19 \
+  --output data/research/sensitivity/retention-0.7 \
+  --seeds 7 17 27 \
+  --retention 0.7 \
+  --recurrent-gain 0.9 \
+  --steps 8 \
+  --normalization incoming \
+  --weights weighted
+```
+
+`--steps`, `--retention`, and `--recurrent-gain` set the recurrent update.
+`--normalization none` removes the division by incoming weight sum, so a neuron with one strong input receives its full drive.
+`--weights binary` weights every present connection equally and tests whether connection strength matters beyond the wiring.
+
+Every setting is recorded in `request.json` and changes the graph hash, so a resumed run cannot silently mix configurations.
+Keep one output directory per configuration.
+
 Three seeds provide an initial screen, not strong statistical evidence.
 Increase the seed count for a serious comparison and keep every configured result.
 The same seed selects the control graph, parameter initialization, minibatch order, and augmentation sequence.

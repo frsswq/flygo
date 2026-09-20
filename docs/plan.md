@@ -95,19 +95,30 @@ The operation counts predict a dense-layer bottleneck, but a device measurement 
 
 ## Workstream 3: Circuit selection and dynamics
 
-Status: not started.
+Status: complete except for the feature decision below.
 
-- Replace the bundled demonstration sample with circuits selected by a fixed rule.
-- Select circuits by connectivity and size before reading any test result.
-- Compare several circuit sizes.
-- Give every control the same selection and tuning budget.
-- Test sensitivity to unsigned weights, incoming-strength normalization, recurrent steps, retention, and recurrent gain.
-- Test added features such as liberties, recent moves, and move history, and give identical features to every model.
+Done:
 
-The current graph is a narrow test of biological topology.
-A circuit with a larger connected core is a fairer test, but it needs a selection rule that cannot leak test information.
+- `flygo select-circuit` selects circuits with one fixed rule and writes a selection manifest with the rule, its version, the source hash, and per-circuit diagnostics.
+- The rule is connectivity-first, so every selected neuron has a connection inside the circuit, and larger circuits extend smaller ones.
+- Circuit sizes are comparable with the existing runner, one output directory per size.
+- `--normalization` selects incoming-strength normalization or none.
+- `--weights` selects recorded weights or equal weights.
+- `--steps`, `--retention`, and `--recurrent-gain` set the recurrent update and are recorded in provenance, in checkpoints, and in the browser manifest.
 
-The modeling choices are assumptions, not biological requirements.
+Open:
+
+- Decide whether to add feature variants such as liberties, recent moves, and move history.
+  A feature change alters the dataset shape, the policy binary, and the browser feature builder, so it needs a version bump and a conformance rebuild.
+  Every model must receive identical features.
+- Run the sensitivity grid and the circuit size sweep on a real corpus.
+  Neither has run, because both are gated on the corpus.
+
+Selection improves the wiring but cannot invent cycles.
+On the bundled sample the largest strongly connected component stays at 14 neurons at every requested size.
+Measure the real prepared graph before claiming a recurrent-depth effect.
+
+The modeling choices remain assumptions.
 More recurrent steps can saturate the state or make neuron states too similar.
 
 ## Workstream 4: Scale and release

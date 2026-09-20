@@ -42,6 +42,11 @@ This keeps the UI responsive and avoids Cloudflare Worker CPU limits.
 Adam updates only the encoder, policy readout, and value readout.
 Training applies random dihedral symmetry per example.
 Checkpoints bind to a SHA-256 of graph arrays and fail to load with another graph.
+Checkpoints also record the recurrent steps, retention, and recurrent gain, so inference cannot silently use other dynamics.
+
+`src/flygo/circuit.py` selects connected experiment circuits with one deterministic rule.
+It writes one parquet file per requested size plus a selection manifest.
+The rule never reads validation or test data.
 
 `src/flygo/search.py` and `web/src/lib/mcts.ts` implement the same policy-value PUCT design.
 A fixed simulation budget supports deterministic tests and a deadline supports production play.
