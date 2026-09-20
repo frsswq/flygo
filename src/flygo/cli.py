@@ -105,6 +105,18 @@ def parser() -> argparse.ArgumentParser:
     experiment.add_argument("--steps", type=int, default=8)
     experiment.add_argument("--retention", type=float, default=DEFAULT_RETENTION)
     experiment.add_argument("--recurrent-gain", type=float, default=DEFAULT_RECURRENT_GAIN)
+    experiment.add_argument(
+        "--normalization",
+        choices=("incoming", "none"),
+        default="incoming",
+        help="Divide the recurrent sum by incoming strength, or leave it unnormalized",
+    )
+    experiment.add_argument(
+        "--weights",
+        choices=("weighted", "binary"),
+        default="weighted",
+        help="Use connectome weights as recorded, or weight every connection equally",
+    )
     experiment.add_argument("--value-weight", type=float, default=1.0)
     experiment.add_argument("--final-test", action="store_true")
 
@@ -265,6 +277,8 @@ def main() -> None:
                 steps=arguments.steps,
                 retention=arguments.retention,
                 recurrent_gain=arguments.recurrent_gain,
+                normalization=arguments.normalization,
+                weights=arguments.weights,
                 value_weight=arguments.value_weight,
                 final_test=arguments.final_test,
             )

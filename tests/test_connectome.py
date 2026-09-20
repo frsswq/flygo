@@ -54,6 +54,23 @@ def test_controls_keep_nodes_and_never_modify_the_original_graph() -> None:
     np.testing.assert_allclose(disconnected.step(state, external), np.tanh(0.35 * state + external))
 
 
+def test_normalization_and_weight_mode_are_selectable_sensitivity_variants() -> None:
+    graph = from_frame(graph_frame())
+    state = np.asarray([1, 0, 0], dtype=np.float32)
+
+    unnormalized = graph.without_normalization()
+    binarized = graph.binarized_weights()
+
+    np.testing.assert_array_equal(unnormalized.incoming_strength, np.ones(3, dtype=np.float32))
+    np.testing.assert_array_equal(binarized.weights, np.ones(3, dtype=np.float32))
+    np.testing.assert_array_equal(graph.incoming_strength, np.asarray([1, 2, 3], dtype=np.float32))
+    np.testing.assert_array_equal(np.sort(graph.weights), np.asarray([1, 2, 3], dtype=np.float32))
+    # Node 1 receives the full weight from node 0 once normalization is removed.
+    assert unnormalized.step(state, retention=0, recurrent_gain=1)[1] == np.float32(np.tanh(2))
+    # Equal weights make the same drive 1, because node 1 has one incoming edge.
+    assert binarized.step(state, retention=0, recurrent_gain=1)[1] == np.float32(np.tanh(1))
+
+
 def test_rewiring_preserves_simple_directed_graph_and_is_reproducible() -> None:
     sources = np.repeat(np.arange(12), 2)
     targets = np.asarray([(source + hop) % 12 for source in range(12) for hop in (1, 3)])

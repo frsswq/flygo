@@ -44,6 +44,8 @@ from flygo.training import (
 )
 
 type ModelName = Literal["male-cns", "rewired", "weight-shuffled", "disconnected", "linear", "mlp"]
+type Normalization = Literal["incoming", "none"]
+type WeightMode = Literal["weighted", "binary"]
 MODELS: tuple[ModelName, ...] = (
     "male-cns",
     "rewired",
@@ -64,6 +66,8 @@ class ResearchConfig:
     steps: int = 8
     retention: float = DEFAULT_RETENTION
     recurrent_gain: float = DEFAULT_RECURRENT_GAIN
+    normalization: Normalization = "incoming"
+    weights: WeightMode = "weighted"
     value_weight: float = 1.0
     final_test: bool = False
 
@@ -79,6 +83,10 @@ class ResearchConfig:
             retention=self.retention,
             recurrent_gain=self.recurrent_gain,
         )
+        if self.normalization not in ("incoming", "none"):
+            raise ValueError("Research normalization must be incoming or none")
+        if self.weights not in ("weighted", "binary"):
+            raise ValueError("Research weight mode must be weighted or binary")
         if not math.isfinite(self.learning_rate) or self.learning_rate <= 0:
             raise ValueError("Research learning rate must be finite and positive")
         if not math.isfinite(self.value_weight) or self.value_weight < 0:
@@ -168,6 +176,10 @@ def research_model(
             control = graph.without_connections()
         case _:
             raise ValueError(f"Unknown research model: {name}")
+    if config.weights == "binary":
+        control = control.binarized_weights()
+    if config.normalization == "none":
+        control = control.without_normalization()
     return ConnectomePolicy.initialize(
         control,
         size=config.size,

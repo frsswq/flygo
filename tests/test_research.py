@@ -2,13 +2,16 @@ import hashlib
 import json
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import polars as pl
 import pytest
 
+from flygo.connectome import from_frame
 from flygo.dataset import build_dataset, parse_sgf_collection, split_of
-from flygo.research import ResearchConfig, run_research
+from flygo.model import ConnectomePolicy
+from flygo.research import ResearchConfig, research_model, run_research
 
 
 def research_dataset(path: Path) -> None:
@@ -141,3 +144,30 @@ def test_experiment_rejects_changed_dataset_before_writing_results(tmp_path: Pat
 def test_experiment_rejects_invalid_seed_sets(seeds: tuple[int, ...]) -> None:
     with pytest.raises(ValueError, match="seeds"):
         ResearchConfig(seeds=seeds)
+
+
+def test_research_model_applies_the_weight_and_normalization_variants() -> None:
+    graph = from_frame(pl.DataFrame({"pre": [1, 2, 3], "post": [2, 3, 1], "weight": [2, 3, 4]}))
+
+    weighted = research_model("male-cns", graph, ResearchConfig(), seed=7)
+    binary = research_model("male-cns", graph, ResearchConfig(weights="binary"), seed=7)
+    unnormalized = research_model("male-cns", graph, ResearchConfig(normalization="none"), seed=7)
+
+    assert isinstance(weighted, ConnectomePolicy)
+    assert isinstance(binary, ConnectomePolicy)
+    assert isinstance(unnormalized, ConnectomePolicy)
+    np.testing.assert_array_equal(np.sort(weighted.connectome.weights), np.asarray([2, 3, 4]))
+    np.testing.assert_array_equal(binary.connectome.weights, np.ones(3))
+    assert weighted.connectome.incoming_strength[1] == 2
+    np.testing.assert_array_equal(unnormalized.connectome.incoming_strength, np.ones(3))
+    # Every variant keeps the same boundary initialization for a shared seed.
+    np.testing.assert_array_equal(weighted.encoder, unnormalized.encoder)
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [{"normalization": "none-typo"}, {"weights": "binary-typo"}],
+)
+def test_research_config_rejects_unknown_modeling_variants(overrides: dict[str, Any]) -> None:
+    with pytest.raises(ValueError, match="must be"):
+        ResearchConfig(**overrides)

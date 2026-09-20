@@ -119,14 +119,46 @@ class FrozenConnectome:
             np.empty(0, dtype=np.float32),
         )
 
+    def without_normalization(self) -> FrozenConnectome:
+        """Return the same wiring with an unnormalized recurrent sum.
+
+        This is a modeling sensitivity variant, not a biological claim.
+        A neuron with one strong incoming edge now receives that full drive.
+        """
+        return _freeze(
+            self.node_ids.copy(),
+            self.source_indices.copy(),
+            self.target_indices.copy(),
+            self.weights.copy(),
+            incoming=np.ones(self.node_count, dtype=np.float32),
+        )
+
+    def binarized_weights(self) -> FrozenConnectome:
+        """Return the same endpoints with every present connection weighted equally.
+
+        This tests whether connection strength matters beyond the wiring itself.
+        """
+        return _freeze(
+            self.node_ids.copy(),
+            self.source_indices.copy(),
+            self.target_indices.copy(),
+            np.ones(self.edge_count, dtype=np.float32),
+        )
+
 
 def _freeze(
-    node_ids: IntArray, sources: IntArray, targets: IntArray, weights: FloatArray
+    node_ids: IntArray,
+    sources: IntArray,
+    targets: IntArray,
+    weights: FloatArray,
+    *,
+    incoming: FloatArray | None = None,
 ) -> FrozenConnectome:
-    incoming = np.bincount(targets, weights=weights, minlength=node_ids.size).astype(
-        np.float32, copy=False
-    )
-    incoming[incoming == 0] = 1
+    if incoming is None:
+        incoming = np.bincount(targets, weights=weights, minlength=node_ids.size).astype(
+            np.float32, copy=False
+        )
+        incoming[incoming == 0] = 1
     arrays = (node_ids, sources, targets, weights, incoming)
     for array in arrays:
         array.flags.writeable = False
