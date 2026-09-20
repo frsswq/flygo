@@ -74,6 +74,8 @@ The encoder, policy readout, and value readout train around it.
 
 - [Training pipeline](docs/pipeline.md): SGF validation, KataGo analysis, training, Elo, and export.
 - [Experiment protocol](docs/experiment.md): controls, metrics, and validity limits.
+- [Research foundation](docs/research.md): matched controls, reproducible screening, and claim limits.
+- [KataGo pilot](docs/teacher-pilot.md): the completed real-data pipeline check.
 - [Engineering notes](docs/engineering.md): repository structure, binary formats, fixtures, and checks.
 - [Deployment](docs/deploy.md): static Cloudflare deployment.
 - [Data profile](docs/data-profile.json): measured facts from the official release.

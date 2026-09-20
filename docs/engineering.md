@@ -4,11 +4,14 @@
 
 ```text
 src/flygo/            Python rules, data, training, search, Elo, export, and API
+src/flygo/assets/     Bundled MaleCNS sample for the viewer and integration tests
 web/                  React viewer, browser rules, policy-value model, and MCTS worker
 web/public/flygo/     Committed browser graph and policy bundles
 shared/               Cross-language conformance fixtures
 docs/                 Pipeline, experiment, deployment, and data documentation
 tests/                Python integration and unit tests
+scripts/              KataGo pilot preparation and verification helpers
+data/                 Local raw downloads and generated artifacts, not deployed
 ```
 
 Production Python code uses Polars instead of pandas.
@@ -70,7 +73,7 @@ make check
 ```
 
 The command runs Ruff formatting and linting, vulture, BasedPyright, pytest, Ultracite, TypeScript, knip, and Vitest.
-It currently includes rules, SGF, dataset, teacher, training, checkpoint, search, Elo, binary, and browser conformance coverage.
+It currently includes rules, SGF, dataset, teacher, training, checkpoint, search, Elo, research controls, pilot scripts, API, binary, and browser conformance coverage.
 
 Build the FastAPI-mounted production artifact with:
 
