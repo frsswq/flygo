@@ -56,12 +56,24 @@ class FrozenConnectome:
             total = total + external_input
         return np.tanh(total).astype(np.float32, copy=False)
 
-    def run(self, external_input: FloatArray, *, steps: int = 8) -> FloatArray:
+    def run(
+        self,
+        external_input: FloatArray,
+        *,
+        steps: int = 8,
+        retention: float = 0.35,
+        recurrent_gain: float = 0.9,
+    ) -> FloatArray:
         if steps < 1:
             raise ValueError("Simulation steps must be positive")
         state = np.zeros(self.node_count, dtype=np.float32)
         for _ in range(steps):
-            state = self.step(state, external_input)
+            state = self.step(
+                state,
+                external_input,
+                retention=retention,
+                recurrent_gain=recurrent_gain,
+            )
         return state
 
     def randomized(self, *, seed: int) -> FrozenConnectome:

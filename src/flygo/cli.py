@@ -8,6 +8,7 @@ from pathlib import Path
 
 from flygo.conformance import DEFAULT_CONFORMANCE, write_conformance
 from flygo.export import ASSET_DIRECTORY, DEFAULT_BUNDLE, estimate_bundle, write_web_bundle
+from flygo.model import DEFAULT_RECURRENT_GAIN, DEFAULT_RETENTION
 from flygo.official_data import download_official_files, prepare_traced_graph, write_profile
 from flygo.policy_fixture import DEFAULT_POLICY_CONFORMANCE, write_policy_conformance
 
@@ -86,6 +87,8 @@ def parser() -> argparse.ArgumentParser:
     train.add_argument("--batch-size", type=int, default=128)
     train.add_argument("--learning-rate", type=float, default=1e-3)
     train.add_argument("--steps", type=int, default=8)
+    train.add_argument("--retention", type=float, default=DEFAULT_RETENTION)
+    train.add_argument("--recurrent-gain", type=float, default=DEFAULT_RECURRENT_GAIN)
     train.add_argument("--seed", type=int, default=7)
 
     experiment = commands.add_parser("experiment", help="Run matched multi-seed research controls")
@@ -100,6 +103,8 @@ def parser() -> argparse.ArgumentParser:
     experiment.add_argument("--batch-size", type=int, default=128)
     experiment.add_argument("--learning-rate", type=float, default=0.001)
     experiment.add_argument("--steps", type=int, default=8)
+    experiment.add_argument("--retention", type=float, default=DEFAULT_RETENTION)
+    experiment.add_argument("--recurrent-gain", type=float, default=DEFAULT_RECURRENT_GAIN)
     experiment.add_argument("--value-weight", type=float, default=1.0)
     experiment.add_argument("--final-test", action="store_true")
 
@@ -214,7 +219,12 @@ def main() -> None:
         training = load_training_data(arguments.dataset / "train.npz", size=arguments.size)
         validation = load_training_data(arguments.dataset / "validation.npz", size=arguments.size)
         policy = ConnectomePolicy.initialize(
-            connectome, size=arguments.size, steps=arguments.steps, seed=arguments.seed
+            connectome,
+            size=arguments.size,
+            steps=arguments.steps,
+            retention=arguments.retention,
+            recurrent_gain=arguments.recurrent_gain,
+            seed=arguments.seed,
         )
         history = fit_policy(
             policy,
@@ -253,6 +263,8 @@ def main() -> None:
                 batch_size=arguments.batch_size,
                 learning_rate=arguments.learning_rate,
                 steps=arguments.steps,
+                retention=arguments.retention,
+                recurrent_gain=arguments.recurrent_gain,
                 value_weight=arguments.value_weight,
                 final_test=arguments.final_test,
             )

@@ -15,9 +15,15 @@ from numpy.typing import NDArray
 
 from flygo.connectome import FrozenConnectome
 from flygo.go import BOARD_SIZES
-from flygo.model import ConnectomePolicy, DensePolicy, Policy, policy_parameters
+from flygo.model import (
+    ConnectomePolicy,
+    DensePolicy,
+    Policy,
+    policy_parameters,
+    validate_dynamics,
+)
 
-CHECKPOINT_VERSION = 1
+CHECKPOINT_VERSION = 2
 
 
 @dataclass(frozen=True)
@@ -364,6 +370,8 @@ def save_policy(
         {
             "kind": "connectome",
             "steps": policy.steps,
+            "retention": policy.retention,
+            "recurrent_gain": policy.recurrent_gain,
             "graph_sha256": graph_sha256(policy.connectome),
         }
         if isinstance(policy, ConnectomePolicy)
@@ -435,6 +443,19 @@ def load_policy(
     if connectome is None:
         raise ValueError("Connectome checkpoint needs its frozen graph")
     steps = metadata.get("steps")
-    if type(steps) is not int or steps < 1:
-        raise ValueError("Checkpoint steps must be a positive integer")
-    return ConnectomePolicy(connectome, encoder, readout, value_readout, size, steps), metadata
+    retention = metadata.get("retention")
+    recurrent_gain = metadata.get("recurrent_gain")
+    dynamics = (retention, recurrent_gain)
+    if any(isinstance(value, bool) or not isinstance(value, int | float) for value in dynamics):
+        raise ValueError("Checkpoint must record numeric recurrent dynamics")
+    validate_dynamics(steps=steps, retention=retention, recurrent_gain=recurrent_gain)
+    return ConnectomePolicy(
+        connectome,
+        encoder,
+        readout,
+        value_readout,
+        size,
+        steps,
+        retention,
+        recurrent_gain,
+    ), metadata

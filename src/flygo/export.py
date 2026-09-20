@@ -32,7 +32,12 @@ import numpy as np
 
 from flygo.connectome import FrozenConnectome
 from flygo.go import BOARD_SIZES, RULESET
-from flygo.model import ConnectomePolicy
+from flygo.model import (
+    DEFAULT_RECURRENT_GAIN,
+    DEFAULT_RETENTION,
+    ConnectomePolicy,
+    validate_dynamics,
+)
 
 PACKAGE_DIRECTORY = Path(__file__).parent
 ASSET_DIRECTORY = PACKAGE_DIRECTORY / "assets"
@@ -109,10 +114,21 @@ def _policy_bytes(policy: ConnectomePolicy) -> bytes:
 
 
 def build_policies(
-    connectome: FrozenConnectome, *, steps: int = DEFAULT_STEPS
+    connectome: FrozenConnectome,
+    *,
+    steps: int = DEFAULT_STEPS,
+    retention: float = DEFAULT_RETENTION,
+    recurrent_gain: float = DEFAULT_RECURRENT_GAIN,
 ) -> dict[int, ConnectomePolicy]:
     return {
-        size: ConnectomePolicy.initialize(connectome, size=size, seed=POLICY_SEED, steps=steps)
+        size: ConnectomePolicy.initialize(
+            connectome,
+            size=size,
+            seed=POLICY_SEED,
+            steps=steps,
+            retention=retention,
+            recurrent_gain=recurrent_gain,
+        )
         for size in BOARD_SIZES
     }
 
@@ -121,13 +137,20 @@ def write_web_bundle(
     output: Path = DEFAULT_BUNDLE,
     *,
     steps: int = DEFAULT_STEPS,
+    retention: float = DEFAULT_RETENTION,
+    recurrent_gain: float = DEFAULT_RECURRENT_GAIN,
     policy_checkpoint: Path | None = None,
 ) -> dict[str, Any]:
     """Write the browser binaries and manifest, and return the manifest."""
     from flygo.connectome import load_connectome
 
     connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
-    policies = build_policies(connectome, steps=steps)
+    policies = build_policies(
+        connectome,
+        steps=steps,
+        retention=retention,
+        recurrent_gain=recurrent_gain,
+    )
     checkpoint_metadata: dict[str, Any] | None = None
     if policy_checkpoint is not None:
         from flygo.training import load_policy
@@ -136,7 +159,9 @@ def write_web_bundle(
         if not isinstance(trained_policy, ConnectomePolicy):
             raise ValueError("Browser export requires a connectome policy")
         policies[trained_policy.size] = trained_policy
-        steps = int(checkpoint_metadata["steps"])
+        steps = trained_policy.steps
+        retention = trained_policy.retention
+        recurrent_gain = trained_policy.recurrent_gain
     output.mkdir(parents=True, exist_ok=True)
 
     graph_path = output / GRAPH_FILE
@@ -173,8 +198,8 @@ def write_web_bundle(
         "dynamics": {
             "activation": "tanh",
             "normalization": "incoming weight sum",
-            "recurrent_gain": 0.9,
-            "retention": 0.35,
+            "recurrent_gain": recurrent_gain,
+            "retention": retention,
             "steps": steps,
         },
         "model_status": (
@@ -204,16 +229,15 @@ def load_web_policies(bundle: Path) -> dict[int, ConnectomePolicy]:
         raise ValueError("Browser graph hash does not match the manifest")
     dynamics = manifest["dynamics"]
     steps = dynamics["steps"]
-    if type(steps) is not int or steps < 1:
-        raise ValueError("Browser steps must be a positive integer")
-    if dynamics != {
-        "activation": "tanh",
-        "normalization": "incoming weight sum",
-        "retention": 0.35,
-        "recurrent_gain": 0.9,
-        "steps": steps,
-    }:
+    if set(dynamics) != {"activation", "normalization", "retention", "recurrent_gain", "steps"}:
         raise ValueError("Unsupported browser dynamics")
+    if dynamics["activation"] != "tanh" or dynamics["normalization"] != "incoming weight sum":
+        raise ValueError("Unsupported browser activation or normalization")
+    retention = dynamics["retention"]
+    recurrent_gain = dynamics["recurrent_gain"]
+    if any(isinstance(value, bool) for value in (retention, recurrent_gain)):
+        raise ValueError("Browser dynamics must be numeric")
+    validate_dynamics(steps=steps, retention=retention, recurrent_gain=recurrent_gain)
     policies: dict[int, ConnectomePolicy] = {}
     for entry in manifest["policies"]:
         size = entry["size"]
@@ -241,6 +265,8 @@ def load_web_policies(bundle: Path) -> dict[int, ConnectomePolicy]:
             weights[readout_end:],
             size,
             steps,
+            retention,
+            recurrent_gain,
         )
     if set(policies) != set(BOARD_SIZES):
         raise ValueError("Browser bundle is missing a board size")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
@@ -10,6 +11,18 @@ from numpy.typing import NDArray
 
 from flygo.connectome import FrozenConnectome
 from flygo.go import DEFAULT_BOARD_SIZE, Position
+
+DEFAULT_RETENTION = 0.35
+DEFAULT_RECURRENT_GAIN = 0.9
+
+
+def validate_dynamics(*, steps: int, retention: float, recurrent_gain: float) -> None:
+    """Reject simulation settings that cannot produce a rate-coded state."""
+    if type(steps) is not int or steps < 1:
+        raise ValueError("Simulation steps must be a positive integer")
+    for name, value in (("retention", retention), ("recurrent_gain", recurrent_gain)):
+        if not math.isfinite(value) or value < 0:
+            raise ValueError(f"{name} must be finite and nonnegative")
 
 
 @dataclass
@@ -22,6 +35,15 @@ class ConnectomePolicy:
     value_readout: NDArray[np.float32]
     size: int = DEFAULT_BOARD_SIZE
     steps: int = 8
+    retention: float = DEFAULT_RETENTION
+    recurrent_gain: float = DEFAULT_RECURRENT_GAIN
+
+    def __post_init__(self) -> None:
+        validate_dynamics(
+            steps=self.steps,
+            retention=self.retention,
+            recurrent_gain=self.recurrent_gain,
+        )
 
     @classmethod
     def initialize(
@@ -31,9 +53,10 @@ class ConnectomePolicy:
         size: int = DEFAULT_BOARD_SIZE,
         seed: int = 7,
         steps: int = 8,
+        retention: float = DEFAULT_RETENTION,
+        recurrent_gain: float = DEFAULT_RECURRENT_GAIN,
     ) -> ConnectomePolicy:
-        if steps < 1:
-            raise ValueError("Simulation steps must be positive")
+        validate_dynamics(steps=steps, retention=retention, recurrent_gain=recurrent_gain)
         generator = np.random.default_rng(seed)
         feature_count = 2 * size * size + 1
         encoder = generator.normal(0, 0.15, (connectome.node_count, feature_count))
@@ -46,6 +69,8 @@ class ConnectomePolicy:
             value_readout.astype(np.float32),
             size,
             steps,
+            retention,
+            recurrent_gain,
         )
 
     @property
@@ -56,7 +81,12 @@ class ConnectomePolicy:
         if position.size != self.size:
             raise ValueError(f"This policy plays {self.size}x{self.size}, not {position.size}")
         external_input = np.tanh(self.encoder @ position.features()).astype(np.float32)
-        return self.connectome.run(external_input, steps=self.steps)
+        return self.connectome.run(
+            external_input,
+            steps=self.steps,
+            retention=self.retention,
+            recurrent_gain=self.recurrent_gain,
+        )
 
     def logits(self, position: Position) -> NDArray[np.float32]:
         return self.readout @ self.activity(position)

@@ -41,6 +41,10 @@ def test_cli_checkpoint_inference_uses_the_training_steps(tmp_path: Path) -> Non
             "5",
             "--steps",
             "1",
+            "--retention",
+            "0.5",
+            "--recurrent-gain",
+            "0.25",
             "--epochs",
             "1",
         ],
@@ -55,11 +59,16 @@ def test_cli_checkpoint_inference_uses_the_training_steps(tmp_path: Path) -> Non
     expected_activity = np.tanh(np.tanh(policy.encoder @ position.features()))
     logits, value = policy.evaluate(position)
     assert metadata["steps"] == 1
+    assert metadata["retention"] == 0.5
+    assert metadata["recurrent_gain"] == 0.25
     np.testing.assert_allclose(logits, policy.readout @ expected_activity, atol=1e-6)
     np.testing.assert_allclose(value, np.tanh(policy.value_readout @ expected_activity), atol=1e-6)
     bundle = tmp_path / "web"
     write_web_bundle(bundle, policy_checkpoint=checkpoint)
     fixture = build_policy_conformance(bundle)
+    manifest = json.loads((bundle / "manifest.json").read_text())
+    assert manifest["dynamics"]["retention"] == 0.5
+    assert manifest["dynamics"]["recurrent_gain"] == 0.25
     empty_case = next(case for case in fixture["cases"] if case["size"] == 5 and not case["moves"])
     assert fixture["steps"] == 1
     np.testing.assert_allclose(empty_case["logits"], logits, atol=1e-6)

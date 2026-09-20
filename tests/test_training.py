@@ -82,7 +82,9 @@ def test_training_reduces_policy_and_value_loss() -> None:
 
 def test_checkpoint_is_bound_to_the_frozen_graph(tmp_path: Path) -> None:
     connectome = graph()
-    trained = ConnectomePolicy.initialize(connectome, size=5, steps=2)
+    trained = ConnectomePolicy.initialize(
+        connectome, size=5, steps=2, retention=0.5, recurrent_gain=0.25
+    )
     fit_policy(trained, examples(), epochs=1)
     path = tmp_path / "policy.npz"
 
@@ -91,6 +93,11 @@ def test_checkpoint_is_bound_to_the_frozen_graph(tmp_path: Path) -> None:
 
     assert metadata["dataset"] == "fixture"
     assert metadata["steps"] == 2
+    assert metadata["retention"] == 0.5
+    assert metadata["recurrent_gain"] == 0.25
+    assert isinstance(restored, ConnectomePolicy)
+    assert restored.retention == 0.5
+    assert restored.recurrent_gain == 0.25
     np.testing.assert_array_equal(restored.encoder, trained.encoder)
     np.testing.assert_array_equal(restored.readout, trained.readout)
     np.testing.assert_array_equal(restored.value_readout, trained.value_readout)

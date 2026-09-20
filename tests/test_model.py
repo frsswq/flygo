@@ -38,3 +38,30 @@ def test_evaluate_returns_policy_logits_and_bounded_value() -> None:
 
     assert logits.shape == (26,)
     assert -1 <= value <= 1
+
+
+def test_dynamics_change_the_recurrent_state() -> None:
+    graph = from_frame(pl.DataFrame({"pre": [1], "post": [2], "weight": [1]}))
+
+    slow = ConnectomePolicy.initialize(graph, size=5, seed=3, retention=0.0, recurrent_gain=0.0)
+    fast = ConnectomePolicy.initialize(graph, size=5, seed=3, retention=0.9, recurrent_gain=0.0)
+
+    np.testing.assert_array_equal(slow.encoder, fast.encoder)
+    assert not np.allclose(slow.activity(Position.empty(5)), fast.activity(Position.empty(5)))
+
+
+@pytest.mark.parametrize(
+    ("steps", "retention", "recurrent_gain"),
+    [(0, 0.35, 0.9), (8, -0.1, 0.9), (8, 0.35, float("nan"))],
+)
+def test_invalid_dynamics_are_rejected(steps: int, retention: float, recurrent_gain: float) -> None:
+    graph = from_frame(pl.DataFrame({"pre": [1], "post": [2], "weight": [1]}))
+
+    with pytest.raises(ValueError):
+        ConnectomePolicy.initialize(
+            graph,
+            size=5,
+            steps=steps,
+            retention=retention,
+            recurrent_gain=recurrent_gain,
+        )

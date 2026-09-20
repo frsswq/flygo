@@ -20,7 +20,15 @@ from pydantic import BaseModel, Field, TypeAdapter
 
 from flygo.connectome import FrozenConnectome, load_connectome
 from flygo.go import BOARD_SIZES, RULESET
-from flygo.model import ConnectomePolicy, DensePolicy, Policy, policy_parameters
+from flygo.model import (
+    DEFAULT_RECURRENT_GAIN,
+    DEFAULT_RETENTION,
+    ConnectomePolicy,
+    DensePolicy,
+    Policy,
+    policy_parameters,
+    validate_dynamics,
+)
 from flygo.official_data import file_sha256
 from flygo.training import (
     EpochMetrics,
@@ -54,6 +62,8 @@ class ResearchConfig:
     batch_size: int = 128
     learning_rate: float = 0.001
     steps: int = 8
+    retention: float = DEFAULT_RETENTION
+    recurrent_gain: float = DEFAULT_RECURRENT_GAIN
     value_weight: float = 1.0
     final_test: bool = False
 
@@ -62,8 +72,13 @@ class ResearchConfig:
             raise ValueError("Unsupported research board size")
         if not self.seeds or len(set(self.seeds)) != len(self.seeds) or min(self.seeds) < 0:
             raise ValueError("Research seeds must be distinct nonnegative integers")
-        if min(self.epochs, self.batch_size, self.steps) < 1:
+        if min(self.epochs, self.batch_size) < 1:
             raise ValueError("Research counts must be positive")
+        validate_dynamics(
+            steps=self.steps,
+            retention=self.retention,
+            recurrent_gain=self.recurrent_gain,
+        )
         if not math.isfinite(self.learning_rate) or self.learning_rate <= 0:
             raise ValueError("Research learning rate must be finite and positive")
         if not math.isfinite(self.value_weight) or self.value_weight < 0:
@@ -153,7 +168,14 @@ def research_model(
             control = graph.without_connections()
         case _:
             raise ValueError(f"Unknown research model: {name}")
-    return ConnectomePolicy.initialize(control, size=config.size, seed=seed, steps=config.steps)
+    return ConnectomePolicy.initialize(
+        control,
+        size=config.size,
+        seed=seed,
+        steps=config.steps,
+        retention=config.retention,
+        recurrent_gain=config.recurrent_gain,
+    )
 
 
 def _run_model(
