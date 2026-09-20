@@ -1,0 +1,483 @@
+{
+  "version": 1,
+  "selection": "First 24 eligible normal 19x19 games with 7.5 komi, replayed under FlyGo rules, taking archives in listed order and members in filename order. No SGF edits. The source pool combines the teacher network and earlier b18 training releases. Games were selected before teacher labelling.",
+  "visits": 256,
+  "stride": 33,
+  "configuration_sha256": "89fc12a11c2ab1474584f63b581a7a10532e6a0a04b1da5b97da470828541cab",
+  "downloads": [
+    {
+      "url": "https://github.com/lightvector/KataGo/releases/download/v1.18.1/katago-v1.18.1-opencl-windows-x64.zip",
+      "file": "katago.zip",
+      "sha256": "1710db1903ab921aa6837a9599c8474f8a59f057650217c5d9bc125ee393a9ff"
+    },
+    {
+      "url": "https://media.katagotraining.org/uploaded/networks/models/kata1/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz",
+      "file": "teacher.bin.gz",
+      "sha256": "9d7a6afed8ff5b74894727e156f04f0cd36060a24824892008fbb6e0cba51f1d"
+    },
+    {
+      "url": "https://katagotraining.org/privacy/",
+      "file": "data-permission.html",
+      "sha256": "96b271505cd60735c2927e65b3cd3a10247df0eb56e822b9c7b6dbbe65f3d0b8"
+    },
+    {
+      "url": "https://katagotraining.org/network_license/",
+      "file": "network-license.html",
+      "sha256": "590837548c66daca592955910aeeea36634daa49c722b1a80f6e24c0b714657e"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s9996604416-d4316597426/2024-05-28/26F000758F54222DFE9FAD37B042B659.tgz",
+      "file": "archives/26F000758F54222DFE9FAD37B042B659.tgz",
+      "sha256": "1b9174cc2add224822df9ee010918a2cd842edffcda86015937996775b03992b"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s9996604416-d4316597426/2024-05-28/7EB96B8E526D7CFAFE9A56A31EAC1485.tgz",
+      "file": "archives/7EB96B8E526D7CFAFE9A56A31EAC1485.tgz",
+      "sha256": "30151aba8fac17fb53ef2b9be3ca415f2fe5acc810222b38f39af21b4683d358"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s9996604416-d4316597426/2024-05-28/491AE23F84312AB8BDB5E11F316E0CA3.tgz",
+      "file": "archives/491AE23F84312AB8BDB5E11F316E0CA3.tgz",
+      "sha256": "8d1627310a4bfd375f0ffdd92622cb438af8a0141c78955704272dbe0d06e25d"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s9996604416-d4316597426/2024-05-28/D2097EC205BF8C008A40D47B59560637.tgz",
+      "file": "archives/D2097EC205BF8C008A40D47B59560637.tgz",
+      "sha256": "72605a7ab4642654231ab4de14f209c626032fa88742cbc46263355a45ae90db"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s9996604416-d4316597426/2024-05-28/A48212926E16489BD0BD98B88121B8A2.tgz",
+      "file": "archives/A48212926E16489BD0BD98B88121B8A2.tgz",
+      "sha256": "b0e6e1cb51d7e988b57bd392d4eae89432100bfbed1852042d68491e776d6e03"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s9996604416-d4316597426/2024-05-28/028EDB1CF33971F8086318EB270F6429.tgz",
+      "file": "archives/028EDB1CF33971F8086318EB270F6429.tgz",
+      "sha256": "a94aae27af8f63d293bfc8fd11eb9193d5c239696461aca580861013f60e6bbb"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s9996604416-d4316597426/2024-05-28/F5B0EDFC9154940D7A91BB512440C867.tgz",
+      "file": "archives/F5B0EDFC9154940D7A91BB512440C867.tgz",
+      "sha256": "353b944f16b773ef72f904b98d83638a8e045defcd26c3fe2f4f9365b6129c3a"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-11/82E7518AEFFAF17A01BA0F11D02B7E91.tgz",
+      "file": "archives/82E7518AEFFAF17A01BA0F11D02B7E91.tgz",
+      "sha256": "e8534abe3262f14ec290bee657a7723541720dca9c7a0fc9f4cad31a34a8763c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-10/0525D49BF7F892A9892A4CB1B0A38464.tgz",
+      "file": "archives/0525D49BF7F892A9892A4CB1B0A38464.tgz",
+      "sha256": "5c2f3048115137d6233c4762906b621aabb73ec91051f1ac6855257465aee070"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/93927DA9EA733B58A97430C7F630E0AD.tgz",
+      "file": "archives/93927DA9EA733B58A97430C7F630E0AD.tgz",
+      "sha256": "f642ba4a44483373d6ec2e966b8ea5fc9f4fc1be545e287985be858b5b23f842"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/BC1375103E335DB27E838824F3D5712A.tgz",
+      "file": "archives/BC1375103E335DB27E838824F3D5712A.tgz",
+      "sha256": "92844eb811a935ad03468172e8d7b7543cfe5150aa0809baab3dbf32fab64734"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/559AE0DE0CB8F48E500E7B4AEAA5A756.tgz",
+      "file": "archives/559AE0DE0CB8F48E500E7B4AEAA5A756.tgz",
+      "sha256": "bfb4e3757a5b1f4af3d2271d927b564167227d712eac828d4b1cd2f587eeb23f"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/6A91FC0C2985A4F3B973849CCB10F236.tgz",
+      "file": "archives/6A91FC0C2985A4F3B973849CCB10F236.tgz",
+      "sha256": "b2959323f6788a3110cb3b511f4412f969afbdc884661c57a1ebdc3f30fb8a8d"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/44D717383C622E133E642808D8AF36D0.tgz",
+      "file": "archives/44D717383C622E133E642808D8AF36D0.tgz",
+      "sha256": "91bee6e00a1ebd6168721734611f2e28e1d59647609a69700cb9456a021555c6"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/13536082E50A0090039834E8B0AF2FD9.tgz",
+      "file": "archives/13536082E50A0090039834E8B0AF2FD9.tgz",
+      "sha256": "4f38b74ec29cf9e3e32738191a13d1bd0ef2e473bd7e46d2e81881084f5093bb"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/A4E43B9A26451DB8EA99603201A38B29.tgz",
+      "file": "archives/A4E43B9A26451DB8EA99603201A38B29.tgz",
+      "sha256": "8ae50192641c344f20d836d46eb2c79fbf97cb65c9f5c8e9ef9c6a1f403700d4"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/74C4E18C463FD7F3C0C19200216ED26D.tgz",
+      "file": "archives/74C4E18C463FD7F3C0C19200216ED26D.tgz",
+      "sha256": "ae0100e2a5d0669bca46dcd475cc1e42d5d385ee1d2f5d9cb36f243b67534231"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-13/028CC1F2BC61EB59E7540CBDDB5972DC.tgz",
+      "file": "archives/028CC1F2BC61EB59E7540CBDDB5972DC.tgz",
+      "sha256": "6b49640fde2b7093b7188b12ef95d24fde4d30fe64002c9cebed0ffa3f8884a6"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/D1605A15FDB5F37BC8D5DABB998D01D0.tgz",
+      "file": "archives/D1605A15FDB5F37BC8D5DABB998D01D0.tgz",
+      "sha256": "b611192bec97fbf7e4139e61826076ffd6a814846baaf83d895322c22b657624"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/4733E996CAFB56617176FC1B51CE2299.tgz",
+      "file": "archives/4733E996CAFB56617176FC1B51CE2299.tgz",
+      "sha256": "37b55228e06a4efaa445da7961010e8aee656b3a0bf9cd9920143a00d61d99c6"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/63977A41FF076159F507602815C719FE.tgz",
+      "file": "archives/63977A41FF076159F507602815C719FE.tgz",
+      "sha256": "bf2db506b73b8b4a697785ba4adcda40ab1d460bbc5e2007f10c41bbcece86f1"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/7F4A89337356C24C1C45002839059023.tgz",
+      "file": "archives/7F4A89337356C24C1C45002839059023.tgz",
+      "sha256": "725fe7c4f903fba0826cb613960082cb401f9aaf2411c9ab39adb6f79ef72aa8"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-20/9CA9C9427F71DD740FA84FC7BB89EA8F.tgz",
+      "file": "archives/9CA9C9427F71DD740FA84FC7BB89EA8F.tgz",
+      "sha256": "7cde39b22aba1dadbe8c65037786a2906f2cbd9851b609d75d84c4603678152c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-18/3A7F2AC3E28DE98DE3CF0D449530FF0C.tgz",
+      "file": "archives/3A7F2AC3E28DE98DE3CF0D449530FF0C.tgz",
+      "sha256": "80aea7ad42e1ad931f04e02a12c1c0ec08134c70c316c1d63049772e0dacd382"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/9C8C1CFBFD20132680161AFA2B78ED43.tgz",
+      "file": "archives/9C8C1CFBFD20132680161AFA2B78ED43.tgz",
+      "sha256": "b415a64d2f79339326201fcb1c2c6a36a84b598c857997f2a11aa101c8365444"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/4A92A8290A39789B0304A98A0FB6A389.tgz",
+      "file": "archives/4A92A8290A39789B0304A98A0FB6A389.tgz",
+      "sha256": "16370b4002c9b3a210945d36babf8abf229805bac5d441a61c2e9f92444b1982"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/708A8EA0A5ECF9928B83D3ECA9F9A5A3.tgz",
+      "file": "archives/708A8EA0A5ECF9928B83D3ECA9F9A5A3.tgz",
+      "sha256": "88ba8d50b0c7ba6fa8334efd19a6ab3dd386d29b38131d2229b9c84d95b04156"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-08-01/6FB3C3CB4FB66451C838F09134C0572A.tgz",
+      "file": "archives/6FB3C3CB4FB66451C838F09134C0572A.tgz",
+      "sha256": "269fc7abb6abd22b0d49c70370d456fac8258ddd9b0fec6c06e711f7c2779aba"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/F2736DF23960F21AFC930572392F8BF3.tgz",
+      "file": "archives/F2736DF23960F21AFC930572392F8BF3.tgz",
+      "sha256": "9f5dad764867ae8925961aab2b29a1c0cf6b0bbb6f26de3c15aa5b0bdb9c0156"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/B8B84BE86E3D64EEC274F15A6304D344.tgz",
+      "file": "archives/B8B84BE86E3D64EEC274F15A6304D344.tgz",
+      "sha256": "140bb9a79d5b623277a862ee5d1d888c35d23d4779d74d189c3aa8c82f31c730"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/5F7D6CEADD59D7776A6DD5D0D1E310B5.tgz",
+      "file": "archives/5F7D6CEADD59D7776A6DD5D0D1E310B5.tgz",
+      "sha256": "0bbfa5bb2b88332d194e0160237679fc2277ff15b7d868b7856be3b3e5cb6e22"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-06/C86C550C6C8CCDB19585638B62FE2C59.tgz",
+      "file": "archives/C86C550C6C8CCDB19585638B62FE2C59.tgz",
+      "sha256": "78b4666acfeb8b49be0252e172c1988995a150dfabd6a72c04653ec18bc97fa9"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-03/716A56D6C057B06450669EC8C4734EC4.tgz",
+      "file": "archives/716A56D6C057B06450669EC8C4734EC4.tgz",
+      "sha256": "1c35bb39c5e50a5b10823abb1e5204e91a5867b06be7833e9131004929910c86"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-02/10E262F7C561E7B26A4C3D2F52672D4F.tgz",
+      "file": "archives/10E262F7C561E7B26A4C3D2F52672D4F.tgz",
+      "sha256": "b2e689f560da612031bb30b3a44c3597df63d405a4fb79ceb1a3ae046604b999"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-02/622DBF7C37B041D62FAD238547ECDB69.tgz",
+      "file": "archives/622DBF7C37B041D62FAD238547ECDB69.tgz",
+      "sha256": "7fa7e2cb32a802ee0bef98ce83772026b29fa0d616092b65b7d1a407784d6849"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-26/81102274BE8DCD9612D15C5382C12273.tgz",
+      "file": "archives/81102274BE8DCD9612D15C5382C12273.tgz",
+      "sha256": "d75067b05840e16cbf1ab0475a7547e038dc0bca9088f0460eed269281346343"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/288EFB5D07604E394ED79B508F220F38.tgz",
+      "file": "archives/288EFB5D07604E394ED79B508F220F38.tgz",
+      "sha256": "795a9e8cbc6454d32f8e672ca4bca0b8c7994e745f67d6e204a9acdb5ce755f9"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/CC2AF96A7E485DF47FAF3BE101DD3656.tgz",
+      "file": "archives/CC2AF96A7E485DF47FAF3BE101DD3656.tgz",
+      "sha256": "c80a718d23c07fb7914dfecce693055a68d3add09a645fadce0d212617e606f1"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/0142BB63C9B9877F31216AF542C8FAB6.tgz",
+      "file": "archives/0142BB63C9B9877F31216AF542C8FAB6.tgz",
+      "sha256": "323c7eb2797bc0695b9b81a4de4b4860dc10ea204f43272de512da664e06563e"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/5C72FE1E511C57562C74EFBA5779E25A.tgz",
+      "file": "archives/5C72FE1E511C57562C74EFBA5779E25A.tgz",
+      "sha256": "9d81c1861b50004fb3817cf260e9ef26d9ee8f5486826160c692ca7ca878a4ab"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-27/5D95B7FC7F595EC91E8A282F67CBD1E3.tgz",
+      "file": "archives/5D95B7FC7F595EC91E8A282F67CBD1E3.tgz",
+      "sha256": "0b5f5e7b7b2574b8c20da63a3fd5bd83c0eced4541dc0534f3e2fc89807c25bc"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-23/0BD30707264D6E69A6B4A8C3EBF29156.tgz",
+      "file": "archives/0BD30707264D6E69A6B4A8C3EBF29156.tgz",
+      "sha256": "7576f22208e499b320e666c4d4725c76da8a5cb2ac48c90beb02b2ea32393cf9"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/5D69DE3B163695730E1210454645DDE7.tgz",
+      "file": "archives/5D69DE3B163695730E1210454645DDE7.tgz",
+      "sha256": "f7d10d68b0d089ada2690a25e3e8fda91016189adfca4664d43c17c7c84ae077"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/0611CBD949B5169DAB4AED25AB8A86F8.tgz",
+      "file": "archives/0611CBD949B5169DAB4AED25AB8A86F8.tgz",
+      "sha256": "fb63ca3f5e737c98c97a80d719533214e8d890951c510de45f4ecd5c992caf9b"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/C6FCB9C285777C7CDA55FC0520E5A30F.tgz",
+      "file": "archives/C6FCB9C285777C7CDA55FC0520E5A30F.tgz",
+      "sha256": "7b5a30811ba8e9a6f13e3257f5bbb98922eb59896a8793f5e37dfa6354a91f2d"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-28/3015EE086BB613867F81DAB73DAEC4A3.tgz",
+      "file": "archives/3015EE086BB613867F81DAB73DAEC4A3.tgz",
+      "sha256": "9e750d1bfb03c06c606a1dd0a557a18cc63f9787cae711fb351696c52d151d72"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-22/B05570570F0AB0F3E3583B94A02543B9.tgz",
+      "file": "archives/B05570570F0AB0F3E3583B94A02543B9.tgz",
+      "sha256": "866807f727370215f98b66316fae16fc83ee7933bb60fa35c8f0a35c61402e5a"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-22/D9E9609AA907176430D716B62422D5AF.tgz",
+      "file": "archives/D9E9609AA907176430D716B62422D5AF.tgz",
+      "sha256": "acd07802e391cec8b953d2080541edd12653a3cead2a71c4fecad6774aed689c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-22/4A44298E9965B19D968570BB05D1B451.tgz",
+      "file": "archives/4A44298E9965B19D968570BB05D1B451.tgz",
+      "sha256": "637a989746b3acab78639dca4a607824d73ec65bc0b1e215553f4fe19539088c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-26/F6136575297216B96C6D4520A749D0F0.tgz",
+      "file": "archives/F6136575297216B96C6D4520A749D0F0.tgz",
+      "sha256": "4d3443838c2429803c541ec80c979e975c1f5a5d3c34ae42174df4b23dc05133"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-22/2D082AC13D2B86AB859ABECA352306FC.tgz",
+      "file": "archives/2D082AC13D2B86AB859ABECA352306FC.tgz",
+      "sha256": "f5666846ceeafa6c5647e95df1bc407b3826f6bdd908135c2941793a3f50cef5"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-22/55F941C20FE50E54CACE0477851BE1D5.tgz",
+      "file": "archives/55F941C20FE50E54CACE0477851BE1D5.tgz",
+      "sha256": "fdc38b7fbfb3c486b4d42577c9a7386a233d601d996ee9a435f093814827b87b"
+    }
+  ],
+  "games": [
+    {
+      "archive": "7EB96B8E526D7CFAFE9A56A31EAC1485.tgz",
+      "member": "8CF1B2F9EC1F02899938F46B3B9BFBD4.sgf",
+      "sha256": "e10f9ed89b05c4951c3b44a7afcca708fb5eca7a1422eb4c69368da4ce619d0b",
+      "game_id": "e10f9ed89b05c4951c3b44a7afcca708fb5eca7a1422eb4c69368da4ce619d0b:0",
+      "split": "train",
+      "moves": 357
+    },
+    {
+      "archive": "A48212926E16489BD0BD98B88121B8A2.tgz",
+      "member": "B0EEC3189258DE7355AE4C30AFBEB409.sgf",
+      "sha256": "5457b0d50f7a0b12561946b5c299d3f7677de856e37c126ad6b54cb2c0780be4",
+      "game_id": "5457b0d50f7a0b12561946b5c299d3f7677de856e37c126ad6b54cb2c0780be4:0",
+      "split": "train",
+      "moves": 328
+    },
+    {
+      "archive": "F5B0EDFC9154940D7A91BB512440C867.tgz",
+      "member": "F842DD9365FFEB2A611A19D7F3352FA3.sgf",
+      "sha256": "c803cc830853cd670d9aed3c3e59e25ddf53b305fd0f7f8c87ffc187882050f1",
+      "game_id": "c803cc830853cd670d9aed3c3e59e25ddf53b305fd0f7f8c87ffc187882050f1:0",
+      "split": "validation",
+      "moves": 326
+    },
+    {
+      "archive": "0525D49BF7F892A9892A4CB1B0A38464.tgz",
+      "member": "7B6682462A174B2F0581EA93324C4AA5.sgf",
+      "sha256": "2d8849d5b2bec56d8b21875b2ae6688dbbcc58479437f084c5315d49f77152f7",
+      "game_id": "2d8849d5b2bec56d8b21875b2ae6688dbbcc58479437f084c5315d49f77152f7:0",
+      "split": "train",
+      "moves": 304
+    },
+    {
+      "archive": "93927DA9EA733B58A97430C7F630E0AD.tgz",
+      "member": "93948EE51EA51D9C96C8B6782E42C057.sgf",
+      "sha256": "26699708bf64e0589553c8a84fbf39b9ef0842720075d2096bb6deb72d1a40a3",
+      "game_id": "26699708bf64e0589553c8a84fbf39b9ef0842720075d2096bb6deb72d1a40a3:0",
+      "split": "train",
+      "moves": 341
+    },
+    {
+      "archive": "559AE0DE0CB8F48E500E7B4AEAA5A756.tgz",
+      "member": "55A58C8602C581E05BC51FA7C7DCF374.sgf",
+      "sha256": "9e3b7bb9cd9ab762a77f0e5058d42f14504e73803b769bdc26b9d6f8c12b03b4",
+      "game_id": "9e3b7bb9cd9ab762a77f0e5058d42f14504e73803b769bdc26b9d6f8c12b03b4:0",
+      "split": "train",
+      "moves": 338
+    },
+    {
+      "archive": "A4E43B9A26451DB8EA99603201A38B29.tgz",
+      "member": "A529DADE7A86DEE80D2E31A8BEFF8727.sgf",
+      "sha256": "55408f199365e29b3301eeb94a5b94eb824d71830f43cc0dbc18c93795351b07",
+      "game_id": "55408f199365e29b3301eeb94a5b94eb824d71830f43cc0dbc18c93795351b07:0",
+      "split": "train",
+      "moves": 286
+    },
+    {
+      "archive": "A4E43B9A26451DB8EA99603201A38B29.tgz",
+      "member": "A52B75DF4031DEC8CDF4538B63B2855A.sgf",
+      "sha256": "652f23f72a0debcc6c20378c80bb807b75abd605ea0f51bc8df76ddd7d488956",
+      "game_id": "652f23f72a0debcc6c20378c80bb807b75abd605ea0f51bc8df76ddd7d488956:0",
+      "split": "train",
+      "moves": 326
+    },
+    {
+      "archive": "D1605A15FDB5F37BC8D5DABB998D01D0.tgz",
+      "member": "D1644A57E345EE0E635E7B21CA9C2FE4.sgf",
+      "sha256": "27f1f1125c812e71159dfc2f8427bb3fb2e77caf7e4508d5a522be2cfff95e9a",
+      "game_id": "27f1f1125c812e71159dfc2f8427bb3fb2e77caf7e4508d5a522be2cfff95e9a:0",
+      "split": "train",
+      "moves": 287
+    },
+    {
+      "archive": "D1605A15FDB5F37BC8D5DABB998D01D0.tgz",
+      "member": "D16F3E09114AF03A4898BA2553A0E199.sgf",
+      "sha256": "dd9bc624248684b62dbf76679d7773a4be9e036aee980d409cb461f7ff2e832d",
+      "game_id": "dd9bc624248684b62dbf76679d7773a4be9e036aee980d409cb461f7ff2e832d:0",
+      "split": "train",
+      "moves": 296
+    },
+    {
+      "archive": "4733E996CAFB56617176FC1B51CE2299.tgz",
+      "member": "47399839AB5D6198973AFDB38C2E8B51.sgf",
+      "sha256": "780b4133747f1baa9ceaa52c0b0f724feb78acf96106ff1280c62dc8eb2d0754",
+      "game_id": "780b4133747f1baa9ceaa52c0b0f724feb78acf96106ff1280c62dc8eb2d0754:0",
+      "split": "train",
+      "moves": 330
+    },
+    {
+      "archive": "7F4A89337356C24C1C45002839059023.tgz",
+      "member": "7F4D30E318A2C76DA34420548B1BD455.sgf",
+      "sha256": "a1b329f742a8c52e1e35a0fae092a2262a0f1987e06938d2a0d3aea82f8d7d89",
+      "game_id": "a1b329f742a8c52e1e35a0fae092a2262a0f1987e06938d2a0d3aea82f8d7d89:0",
+      "split": "train",
+      "moves": 325
+    },
+    {
+      "archive": "5F7D6CEADD59D7776A6DD5D0D1E310B5.tgz",
+      "member": "603A49B88B82260811D743BC414C89BA.sgf",
+      "sha256": "dada0fbb9164aefaca9d2f6e04680802664107a63c4b3871902a0e0a412447f6",
+      "game_id": "dada0fbb9164aefaca9d2f6e04680802664107a63c4b3871902a0e0a412447f6:0",
+      "split": "train",
+      "moves": 325
+    },
+    {
+      "archive": "CC2AF96A7E485DF47FAF3BE101DD3656.tgz",
+      "member": "CE9E6D4C08B50F08E0CEC7DD832CDC73.sgf",
+      "sha256": "36027fb6a7476ad116b4ce7bb7e047b89f844549e1bff3419a4621cbb9132c6b",
+      "game_id": "36027fb6a7476ad116b4ce7bb7e047b89f844549e1bff3419a4621cbb9132c6b:0",
+      "split": "train",
+      "moves": 372
+    },
+    {
+      "archive": "CC2AF96A7E485DF47FAF3BE101DD3656.tgz",
+      "member": "E2156E4A52CFF4A762971A0AA5B06FEA.sgf",
+      "sha256": "15181dc134ea73925065f798f5b6fae05402c16348b341b0b83f02690a849979",
+      "game_id": "15181dc134ea73925065f798f5b6fae05402c16348b341b0b83f02690a849979:0",
+      "split": "train",
+      "moves": 332
+    },
+    {
+      "archive": "0142BB63C9B9877F31216AF542C8FAB6.tgz",
+      "member": "04A5A9F3B03828BD814E7003DDDE96FC.sgf",
+      "sha256": "8c6b54baf1a3a19f47a660e98e8d5ba910db1b5f1cf60ad287db3f68fa31fe24",
+      "game_id": "8c6b54baf1a3a19f47a660e98e8d5ba910db1b5f1cf60ad287db3f68fa31fe24:0",
+      "split": "test",
+      "moves": 296
+    },
+    {
+      "archive": "0142BB63C9B9877F31216AF542C8FAB6.tgz",
+      "member": "0E45A7907EF6DAEABCFEE1530972D4DD.sgf",
+      "sha256": "9fd4eab1b7768beca8c47ba9a0a4cbccf41a7d1529308c06765f68a050421fce",
+      "game_id": "9fd4eab1b7768beca8c47ba9a0a4cbccf41a7d1529308c06765f68a050421fce:0",
+      "split": "train",
+      "moves": 366
+    },
+    {
+      "archive": "0BD30707264D6E69A6B4A8C3EBF29156.tgz",
+      "member": "19BEFB9C181EDDC6DF5C36881677AE2E.sgf",
+      "sha256": "81d7ca5061900e750c3c1e25f72f08a8b609d561bc4315ab332d87b8ded38561",
+      "game_id": "81d7ca5061900e750c3c1e25f72f08a8b609d561bc4315ab332d87b8ded38561:0",
+      "split": "train",
+      "moves": 356
+    },
+    {
+      "archive": "C6FCB9C285777C7CDA55FC0520E5A30F.tgz",
+      "member": "C703D148EF9E2F384092288FD5CB4C0C.sgf",
+      "sha256": "e3036918093fd8004e4faf2d01486375ae1c41f9b41730477fb6d2c6b84445d9",
+      "game_id": "e3036918093fd8004e4faf2d01486375ae1c41f9b41730477fb6d2c6b84445d9:0",
+      "split": "validation",
+      "moves": 303
+    },
+    {
+      "archive": "C6FCB9C285777C7CDA55FC0520E5A30F.tgz",
+      "member": "C705904464B4338C87440ABCEA957E71.sgf",
+      "sha256": "7a33c46977491977dac111cd3e3a5c84b4c7bba7a0c6c3e9759c79c934de88dc",
+      "game_id": "7a33c46977491977dac111cd3e3a5c84b4c7bba7a0c6c3e9759c79c934de88dc:0",
+      "split": "train",
+      "moves": 292
+    },
+    {
+      "archive": "B05570570F0AB0F3E3583B94A02543B9.tgz",
+      "member": "B4CD6822DCDD00F81B9304C3B75BB196.sgf",
+      "sha256": "801f12f5328febe296fbede620aa5449512ba75ef51ed697c2ad05a0e2b7bb84",
+      "game_id": "801f12f5328febe296fbede620aa5449512ba75ef51ed697c2ad05a0e2b7bb84:0",
+      "split": "train",
+      "moves": 291
+    },
+    {
+      "archive": "4A44298E9965B19D968570BB05D1B451.tgz",
+      "member": "65D34500454EC492F20F7B44CA7DBD9F.sgf",
+      "sha256": "d334e895071dfe9d09d628d5b307b0c2698bbce83d525f395f9edea1419d5b88",
+      "game_id": "d334e895071dfe9d09d628d5b307b0c2698bbce83d525f395f9edea1419d5b88:0",
+      "split": "train",
+      "moves": 361
+    },
+    {
+      "archive": "4A44298E9965B19D968570BB05D1B451.tgz",
+      "member": "7F359D598E6BB13F315802611E46569C.sgf",
+      "sha256": "c5dfc91f9610a295adc931907811323ff37f287df17d22c39384812cb4df32d4",
+      "game_id": "c5dfc91f9610a295adc931907811323ff37f287df17d22c39384812cb4df32d4:0",
+      "split": "train",
+      "moves": 273
+    },
+    {
+      "archive": "55F941C20FE50E54CACE0477851BE1D5.tgz",
+      "member": "576F8D4FA1C0A762BB09894E6F093F75.sgf",
+      "sha256": "41690941c6c64aefb5d5a3b6a62de7c53b932d2a1f07d654201ba2c045bdbb26",
+      "game_id": "41690941c6c64aefb5d5a3b6a62de7c53b932d2a1f07d654201ba2c045bdbb26:0",
+      "split": "train",
+      "moves": 362
+    }
+  ]
+}

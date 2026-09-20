@@ -3,6 +3,8 @@
 Training and benchmarking run offline.
 Cloudflare receives only the static application, graph, and exported policy-value weights.
 
+The [pinned KataGo pilot](teacher-pilot.md) provides a small, real-data recipe for checking this pipeline.
+
 ## 1. Collect SGF games
 
 Use legally reusable 19x19 SGF records with 7.5 komi and a black or white result.
@@ -36,6 +38,7 @@ katago analysis \
 
 Record the KataGo version, network hash, configuration hash, GPU type, and command.
 For a small pilot, increase `--stride` to analyze fewer positions without removing move history.
+Use an odd stride to include both players; an even stride samples only Black to play.
 Use the same stride when building the dataset.
 Queries use the board's fixed komi: 7.5 for 19x19 and zero for 5x5 validation.
 KataGo can return positions out of order, so FlyGo joins results by game ID and turn number.
