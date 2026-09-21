@@ -1,4 +1,5 @@
 import json
+import re
 import subprocess
 from pathlib import Path
 
@@ -26,7 +27,7 @@ def test_cli_checkpoint_inference_uses_the_training_steps(tmp_path: Path) -> Non
         )
     (dataset / "manifest.json").write_text(json.dumps({"fixture": True}))
     checkpoint = tmp_path / "policy.npz"
-    subprocess.run(
+    result = subprocess.run(
         [
             "uv",
             "run",
@@ -40,11 +41,11 @@ def test_cli_checkpoint_inference_uses_the_training_steps(tmp_path: Path) -> Non
             "--size",
             "5",
             "--steps",
-            "1",
+            "3",
             "--retention",
-            "0.5",
+            "0",
             "--recurrent-gain",
-            "0.25",
+            "0",
             "--epochs",
             "1",
         ],
@@ -55,21 +56,27 @@ def test_cli_checkpoint_inference_uses_the_training_steps(tmp_path: Path) -> Non
     graph = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
     policy, metadata = load_policy(checkpoint, graph)
     assert isinstance(policy, ConnectomePolicy)
-    # With one step and a zero initial state, no recurrent drive has arrived.
+    # With zero retention and gain, each recurrent step depends only on the encoder.
     expected_activity = np.tanh(np.tanh(policy.encoder @ position.features()))
     logits, value = policy.evaluate(position)
-    assert metadata["steps"] == 1
-    assert metadata["retention"] == 0.5
-    assert metadata["recurrent_gain"] == 0.25
+    assert metadata["steps"] == 3
+    assert metadata["retention"] == 0
+    assert metadata["recurrent_gain"] == 0
     np.testing.assert_allclose(logits, policy.readout @ expected_activity, atol=1e-6)
     np.testing.assert_allclose(value, np.tanh(policy.value_readout @ expected_activity), atol=1e-6)
+    reported = re.search(r"validation policy=([^,]+), value=([^\s]+)", result.stdout)
+    assert reported is not None
+    shifted = logits - logits.max()
+    expected_policy_loss = float(np.log(np.exp(shifted).sum()) - shifted[12])
+    np.testing.assert_allclose(float(reported.group(1)), expected_policy_loss, atol=1e-6)
+    np.testing.assert_allclose(float(reported.group(2)), (value - 1) ** 2, atol=1e-6)
     bundle = tmp_path / "web"
     write_web_bundle(bundle, policy_checkpoint=checkpoint)
     fixture = build_policy_conformance(bundle)
     manifest = json.loads((bundle / "manifest.json").read_text())
-    assert manifest["dynamics"]["retention"] == 0.5
-    assert manifest["dynamics"]["recurrent_gain"] == 0.25
+    assert manifest["dynamics"]["retention"] == 0
+    assert manifest["dynamics"]["recurrent_gain"] == 0
     empty_case = next(case for case in fixture["cases"] if case["size"] == 5 and not case["moves"])
-    assert fixture["steps"] == 1
+    assert fixture["steps"] == 3
     np.testing.assert_allclose(empty_case["logits"], logits, atol=1e-6)
     np.testing.assert_allclose(empty_case["value"], value, atol=1e-6)

@@ -158,7 +158,11 @@ def _forward(
             policy.connectome.target_indices,
             (states[-1][:, policy.connectome.source_indices] * coefficients).T,
         )
-        states.append(np.tanh(0.35 * states[-1] + 0.9 * drive + external).astype(np.float32))
+        states.append(
+            np.tanh(
+                policy.retention * states[-1] + policy.recurrent_gain * drive + external
+            ).astype(np.float32)
+        )
     return external, states, coefficients
 
 
@@ -204,11 +208,15 @@ def loss_and_gradients(
     for step in range(model.steps - 1, -1, -1):
         activation_gradient = state_gradient * (1 - states[step + 1] * states[step + 1])
         external_gradient += activation_gradient
-        previous_gradient = 0.35 * activation_gradient
+        previous_gradient = model.retention * activation_gradient
         np.add.at(
             previous_gradient.T,
             model.connectome.source_indices,
-            (0.9 * activation_gradient[:, model.connectome.target_indices] * coefficients).T,
+            (
+                model.recurrent_gain
+                * activation_gradient[:, model.connectome.target_indices]
+                * coefficients
+            ).T,
         )
         state_gradient = previous_gradient
     encoder_gradient = (external_gradient * (1 - external * external)).T @ batch.features

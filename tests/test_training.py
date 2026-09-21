@@ -5,6 +5,7 @@ import polars as pl
 import pytest
 
 from flygo.connectome import from_frame
+from flygo.go import Position
 from flygo.model import ConnectomePolicy
 from flygo.training import (
     TrainingData,
@@ -37,6 +38,39 @@ def examples(rows: int = 8) -> TrainingData:
     policy[:, 12] = 1
     value = np.ones(rows, dtype=np.float32)
     return TrainingData(features, legal, policy, value)
+
+
+def position_examples() -> tuple[list[Position], TrainingData]:
+    positions = [Position.empty(5), Position.empty(5).play(0), Position.empty(5).play(12)]
+    features = np.stack([position.features() for position in positions])
+    legal = np.zeros((len(positions), 26), dtype=np.bool_)
+    for row, position in enumerate(positions):
+        legal[row, position.legal_actions()] = True
+    policy = np.zeros((len(positions), 26), dtype=np.float32)
+    policy[:, 25] = 1
+    value = np.asarray([0.25, -0.5, 0.75], dtype=np.float32)
+    return positions, TrainingData(features, legal, policy, value)
+
+
+def inference_loss(
+    model: ConnectomePolicy,
+    positions: list[Position],
+    data: TrainingData,
+    *,
+    value_weight: float,
+) -> float:
+    policy_loss = 0.0
+    value_loss = 0.0
+    for row, position in enumerate(positions):
+        logits, value = model.evaluate(position)
+        masked = np.where(data.legal[row], logits, -1e9)
+        shifted = masked - masked.max()
+        probabilities = np.exp(shifted) / np.exp(shifted).sum()
+        policy_loss -= float(
+            np.sum(data.policy[row, data.legal[row]] * np.log(probabilities[data.legal[row]]))
+        )
+        value_loss += (value - data.value[row]) ** 2
+    return (policy_loss + value_weight * value_loss) / len(positions)
 
 
 def test_dihedral_symmetry_moves_features_policy_and_legality_together() -> None:
@@ -107,9 +141,9 @@ def test_checkpoint_is_bound_to_the_frozen_graph(tmp_path: Path) -> None:
         load_policy(path, other)
 
 
-def test_mean_loss_gradients_match_finite_differences_for_every_parameter() -> None:
-    model = ConnectomePolicy.initialize(graph(), size=5, steps=3)
-    data = examples(rows=4)
+def test_mean_loss_gradients_match_configured_inference_for_every_parameter() -> None:
+    model = ConnectomePolicy.initialize(graph(), size=5, steps=3, retention=0.6, recurrent_gain=0.2)
+    positions, data = position_examples()
     value_weight = 0.7
     _, _, gradients = loss_and_gradients(model, data, value_weight=value_weight)
     for parameter, gradient in zip(
@@ -121,11 +155,28 @@ def test_mean_loss_gradients_match_finite_differences_for_every_parameter() -> N
         losses = []
         for offset in (epsilon, -epsilon):
             parameter[index] = original + offset
-            policy_loss, value_loss = evaluate_loss(model, data)
-            losses.append(policy_loss + value_weight * value_loss)
+            losses.append(inference_loss(model, positions, data, value_weight=value_weight))
         parameter[index] = original
         numerical_gradient = (losses[0] - losses[1]) / (2 * epsilon)
         np.testing.assert_allclose(gradient[index], numerical_gradient, rtol=0.01, atol=1e-4)
+
+
+@pytest.mark.parametrize(
+    ("retention", "recurrent_gain"),
+    [(0.35, 0.9), (0.0, 0.0), (0.6, 0.2)],
+)
+def test_evaluation_matches_configured_policy_inference(
+    retention: float, recurrent_gain: float
+) -> None:
+    model = ConnectomePolicy.initialize(
+        graph(), size=5, steps=3, retention=retention, recurrent_gain=recurrent_gain
+    )
+    positions, data = position_examples()
+
+    policy_loss, value_loss = evaluate_loss(model, data)
+    expected_combined = inference_loss(model, positions, data, value_weight=1.0)
+
+    assert policy_loss + value_loss == pytest.approx(expected_combined, abs=1e-6)
 
 
 def test_validation_selects_best_epoch_instead_of_last_epoch() -> None:
