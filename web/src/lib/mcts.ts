@@ -1,7 +1,7 @@
 import { applyMove, legalActions, resultOf } from "@/lib/go-rules";
 import type { Position } from "@/lib/go-rules";
 import { activityOf, logitsOf, valueOf } from "@/lib/policy";
-import type { Dynamics, GraphBundle, PolicyBundle } from "@/lib/policy";
+import type { LoadedModel } from "@/lib/policy";
 
 interface SearchNode {
   readonly consecutivePasses: number;
@@ -70,19 +70,17 @@ const terminalValue = (node: SearchNode): number =>
 
 const expand = (
   node: SearchNode,
-  graph: GraphBundle,
-  policy: PolicyBundle,
-  dynamics: Dynamics
+  model: LoadedModel
 ): { activity: Float32Array; value: number } => {
   if (node.consecutivePasses >= 2) {
     return {
-      activity: new Float32Array(graph.nodeCount),
+      activity: new Float32Array(model.graph.nodeCount),
       value: terminalValue(node),
     };
   }
-  const activity = activityOf(graph, policy, dynamics, node.position);
+  const activity = activityOf(model, node.position);
   const priors = priorsOf(
-    logitsOf(policy, activity),
+    logitsOf(model.policy, activity),
     legalActions(node.position)
   );
   for (const [action, prior] of priors) {
@@ -95,7 +93,7 @@ const expand = (
       nodeOf(applyMove(node.position, action), passes, prior)
     );
   }
-  return { activity, value: valueOf(policy, activity) };
+  return { activity, value: valueOf(model.policy, activity) };
 };
 
 const select = (node: SearchNode, exploration: number): SearchNode => {
@@ -124,9 +122,7 @@ const select = (node: SearchNode, exploration: number): SearchNode => {
 
 const simulate = (
   root: SearchNode,
-  graph: GraphBundle,
-  policy: PolicyBundle,
-  dynamics: Dynamics,
+  model: LoadedModel,
   exploration: number
 ): Float32Array | null => {
   const path = [root];
@@ -135,7 +131,7 @@ const simulate = (
     node = select(node, exploration);
     path.push(node);
   }
-  const reading = expand(node, graph, policy, dynamics);
+  const reading = expand(node, model);
   let { value } = reading;
   for (let index = path.length - 1; index >= 0; index -= 1) {
     const visited = path[index];
@@ -182,9 +178,7 @@ const rootChoice = (
 };
 
 export const searchPosition = (
-  graph: GraphBundle,
-  policy: PolicyBundle,
-  dynamics: Dynamics,
+  model: LoadedModel,
   position: Position,
   options: SearchOptions = {}
 ): SearchReading => {
@@ -210,14 +204,14 @@ export const searchPosition = (
   let simulations = 0;
   let rootActivity: Float32Array | null = null;
   while (hasBudget(simulations, maxSimulations, deadline)) {
-    const activity = simulate(root, graph, policy, dynamics, exploration);
+    const activity = simulate(root, model, exploration);
     if (activity) {
       rootActivity = activity;
     }
     simulations += 1;
   }
   if (root.children.size === 0) {
-    rootActivity = expand(root, graph, policy, dynamics).activity;
+    rootActivity = expand(root, model).activity;
   }
   if (rootActivity === null) {
     throw new Error("Search produced no legal action");

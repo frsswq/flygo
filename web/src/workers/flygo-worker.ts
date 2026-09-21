@@ -44,26 +44,25 @@ const handle = async (request: FlyGoWorkerRequest): Promise<void> => {
         `No ${request.size}x${request.size} policy is loaded`
       );
     }
+    const model = {
+      dynamics: bundle.dynamics,
+      graph: bundle.graph,
+      policy,
+    };
     if (request.type === "initialize") {
       const position = replayMoves(request.size, []);
       send({
-        activity: activityOf(bundle.graph, policy, bundle.dynamics, position),
+        activity: activityOf(model, position),
         requestId: request.requestId,
         type: "ready",
       });
       return;
     }
     const position = replayMoves(request.size, request.moves);
-    const reading = searchPosition(
-      bundle.graph,
-      policy,
-      bundle.dynamics,
-      position,
-      {
-        consecutivePasses: trailingPasses(request.moves, request.size),
-        timeMs: request.timeMs,
-      }
-    );
+    const reading = searchPosition(model, position, {
+      consecutivePasses: trailingPasses(request.moves, request.size),
+      timeMs: request.timeMs,
+    });
     send({
       action: reading.action,
       activity: reading.activity,

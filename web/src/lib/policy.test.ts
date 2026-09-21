@@ -119,9 +119,7 @@ describe("browser policy conformance with the Python engine", () => {
       });
       const position = replayMoves(testCase.size, testCase.moves);
       const activity = activityOf(
-        graph,
-        policy,
-        dynamicsOf(manifest),
+        { dynamics: dynamicsOf(manifest), graph, policy },
         position,
         fixture.steps
       );

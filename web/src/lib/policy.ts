@@ -91,6 +91,13 @@ export interface WebBundle {
   readonly ruleset: string;
 }
 
+/** One loaded model: the frozen graph, its policy heads, and its dynamics. */
+export interface LoadedModel {
+  readonly dynamics: Dynamics;
+  readonly graph: GraphBundle;
+  readonly policy: PolicyBundle;
+}
+
 const readHeader = (buffer: ArrayBuffer, length: number): DataView => {
   if (buffer.byteLength < length) {
     throw new RangeError(
@@ -308,16 +315,14 @@ const runGraph = (
 };
 
 export const activityOf = (
-  graph: GraphBundle,
-  policy: PolicyBundle,
-  dynamics: Dynamics,
+  model: LoadedModel,
   position: Position,
-  steps: number = dynamics.steps
+  steps: number = model.dynamics.steps
 ): Float32Array =>
   runGraph(
-    graph,
-    dynamics,
-    encoderInput(graph, policy, featuresOf(position)),
+    model.graph,
+    model.dynamics,
+    encoderInput(model.graph, model.policy, featuresOf(position)),
     steps
   );
 

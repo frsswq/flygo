@@ -43,9 +43,7 @@ describe("browser MCTS", () => {
     const position = replayMoves(5, []);
 
     const result = searchPosition(
-      graph,
-      policy,
-      dynamicsOf(manifest),
+      { dynamics: dynamicsOf(manifest), graph, policy },
       position,
       { maxSimulations: 8 }
     );
@@ -67,10 +65,14 @@ describe("browser MCTS", () => {
     const finished = replayMoves(5, [25, 25]);
 
     expect(() =>
-      searchPosition(graph, policy, dynamicsOf(manifest), finished, {
-        consecutivePasses: 2,
-        maxSimulations: 1,
-      })
+      searchPosition(
+        { dynamics: dynamicsOf(manifest), graph, policy },
+        finished,
+        {
+          consecutivePasses: 2,
+          maxSimulations: 1,
+        }
+      )
     ).toThrow(/finished/u);
   });
 });
