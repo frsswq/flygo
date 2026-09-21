@@ -187,6 +187,19 @@ def fit_elo(games: Sequence[GameRecord], *, anchor: str | None = None) -> dict[s
     fixed = anchor or names[0]
     if fixed not in names:
         raise ValueError(f"Unknown Elo anchor {fixed}")
+    neighbors = {name: set() for name in names}
+    for game in games:
+        neighbors[game.black].add(game.white)
+        neighbors[game.white].add(game.black)
+    connected = {fixed}
+    pending = [fixed]
+    while pending:
+        for neighbor in neighbors[pending.pop()] - connected:
+            connected.add(neighbor)
+            pending.append(neighbor)
+    if connected != set(names):
+        missing = ", ".join(sorted(set(names) - connected))
+        raise ValueError(f"Elo comparison graph is disconnected from {fixed}: {missing}")
     unknown = [name for name in names if name != fixed]
     index = {name: offset for offset, name in enumerate(unknown)}
     ratings = np.zeros(len(unknown), dtype=np.float64)
@@ -226,21 +239,26 @@ def elo_with_confidence(
     bootstrap_samples: int = 500,
     seed: int = 7,
 ) -> dict[str, Rating]:
-    """Fit Elo and bootstrap paired-game blocks for 95% intervals."""
+    """Fit Elo and bootstrap paired blocks within each matchup for 95% intervals."""
     if bootstrap_samples < 1:
         raise ValueError("bootstrap_samples must be positive")
     point = fit_elo(games, anchor=anchor)
-    blocks: dict[int, list[GameRecord]] = {}
+    fixed = anchor or min(point)
+    blocks: dict[tuple[str, str], dict[int, list[GameRecord]]] = {}
     for game in games:
-        blocks.setdefault(game.paired_game, []).append(game)
+        matchup = (min(game.black, game.white), max(game.black, game.white))
+        blocks.setdefault(matchup, {}).setdefault(game.paired_game, []).append(game)
     generator = random.Random(seed)
-    block_ids = sorted(blocks)
     samples = {name: [] for name in point}
     for _ in range(bootstrap_samples):
-        sampled = [game for _ in block_ids for game in blocks[generator.choice(block_ids)]]
-        fitted = fit_elo(sampled, anchor=anchor)
-        for name, rating in fitted.items():
-            samples[name].append(rating)
+        sampled: list[GameRecord] = []
+        for matchup_blocks in blocks.values():
+            block_ids = sorted(matchup_blocks)
+            for _ in block_ids:
+                sampled.extend(matchup_blocks[generator.choice(block_ids)])
+        fitted = fit_elo(sampled, anchor=fixed)
+        for name in point:
+            samples[name].append(fitted[name])
     return {
         name: Rating(
             rating,

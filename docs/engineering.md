@@ -51,7 +51,10 @@ The rule never reads validation or test data.
 
 `src/flygo/search.py` and `web/src/lib/mcts.ts` implement the same policy-value PUCT design.
 A fixed simulation budget supports deterministic tests and a deadline supports production play.
-`src/flygo/arena.py` runs paired color-swapped games and fits regularized Bradley-Terry Elo with paired bootstrap intervals.
+`src/flygo/arena.py` runs paired color-swapped games and fits regularized Bradley-Terry Elo.
+The bootstrap resamples paired blocks with colors kept together inside each matchup, so every resample keeps the full opponent set and the same fixed anchor.
+That fixed anchor is the explicit one, or the lexicographically first agent name.
+A comparison graph that does not reach every agent from the anchor is rejected instead of being fit in mixed reference frames.
 
 ## Conformance fixtures
 

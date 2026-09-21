@@ -125,7 +125,9 @@ Every opening is played twice with colors reversed.
 Provide a versioned JSON array of action arrays with `--openings` to reduce opening and first-player bias.
 
 The report contains every game, all run settings, policy hashes, relative Elo ratings, and paired-bootstrap 95% intervals.
-The random agent is fixed at zero Elo.
+The bootstrap resamples color-swapped pairs inside each matchup, so each resample keeps every opponent and the same fixed anchor.
+The random agent is fixed at zero Elo, and its reported interval is exactly zero.
+If some agent never played a path to the anchor, the command fails instead of reporting ratings from mixed reference frames.
 Elo values are comparable only when board size, rules, opponents, openings, time control, and software versions are identical.
 Use `--simulations` instead of `--seconds` for deterministic regression runs.
 

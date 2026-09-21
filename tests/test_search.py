@@ -1,7 +1,9 @@
 import polars as pl
+import pytest
 
 from flygo.arena import (
     Agent,
+    GameRecord,
     elo_with_confidence,
     fit_elo,
     paired_tournament,
@@ -24,6 +26,10 @@ def passing_agent(name: str) -> Agent:
 
 def first_legal_agent(name: str) -> Agent:
     return Agent(name, lambda position, _passes: position.legal_actions()[1])
+
+
+def game(black: str, white: str, winner: int, paired_game: int) -> GameRecord:
+    return GameRecord(black, white, winner, (), 0, paired_game, False)
 
 
 def test_mcts_returns_a_visited_legal_action() -> None:
@@ -93,3 +99,33 @@ def test_elo_rewards_the_agent_that_wins_every_game() -> None:
     assert confidence["strong"].elo > 0
     assert confidence["strong"].lower <= confidence["strong"].elo
     assert confidence["strong"].upper >= confidence["strong"].elo
+
+
+def test_elo_bootstrap_keeps_every_matchup_and_fixed_anchor() -> None:
+    games = [
+        game("random", "greedy", 2, 0),
+        game("greedy", "random", 1, 0),
+        game("random", "mcts", 2, 1),
+        game("mcts", "random", 1, 1),
+        game("greedy", "mcts", 2, 2),
+        game("mcts", "greedy", 1, 2),
+    ]
+
+    for seed in range(10):
+        ratings = elo_with_confidence(games, anchor="random", bootstrap_samples=20, seed=seed)
+        assert set(ratings) == {"random", "greedy", "mcts"}
+        assert ratings["random"].elo == 0
+        assert ratings["random"].lower == 0
+        assert ratings["random"].upper == 0
+
+    default = elo_with_confidence(games, bootstrap_samples=20, seed=0)
+    assert default["greedy"].elo == 0
+    assert default["greedy"].lower == 0
+    assert default["greedy"].upper == 0
+
+
+def test_elo_rejects_disconnected_comparison_graph() -> None:
+    games = [game("anchor", "peer", 1, 0), game("left", "right", 1, 1)]
+
+    with pytest.raises(ValueError, match="disconnected"):
+        fit_elo(games, anchor="anchor")
