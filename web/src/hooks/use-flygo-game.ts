@@ -1,16 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
-import {
-  DEFAULT_BOARD_SIZE,
-  legalActions,
-  passActionFor,
-  replayMoves,
-  resultOf,
-  trailingPasses,
-} from "@/lib/go-rules";
-import type { FlyGoWorkerResponse } from "@/lib/worker-protocol";
+import { useFlyGoWorker } from "@/hooks/use-flygo-worker";
+import { boardViewOf, canPlay, isFinished, statusOf } from "@/lib/game-view";
+import { DEFAULT_BOARD_SIZE } from "@/lib/go-rules";
 
-const BUNDLE_URL = `${import.meta.env.BASE_URL}flygo/`;
 const SEARCH_TIME_MS = 1000;
 
 const messageOf = (error: unknown): string =>
@@ -24,19 +17,8 @@ export const useFlyGoGame = () => {
   const [activity, setActivity] = useState<Float32Array>(
     () => new Float32Array(0)
   );
-  const [ready, setReady] = useState(false);
-  const [thinking, setThinking] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [searchSummary, setSearchSummary] = useState<string | null>(null);
-  const workerRef = useRef<Worker | null>(null);
-  const requestRef = useRef(0);
-  // Readiness is also kept in a ref, because callbacks must know whether the
-  // bundle has loaded without waiting for a render.
-  const readyRef = useRef(false);
-  const markReady = useCallback((next: boolean) => {
-    readyRef.current = next;
-    setReady(next);
-  }, []);
   const movesRef = useRef<number[]>([]);
   const selfPlayRef = useRef(false);
   const previousActionRef = useRef<number | null>(null);
@@ -53,237 +35,150 @@ export const useFlyGoGame = () => {
     setSelfPlay(false);
   }, []);
 
-  const requestMove = useCallback(
-    (nextMoves: readonly number[]) => {
-      const worker = workerRef.current;
-      if (!worker) {
-        return;
-      }
-      const requestId = requestRef.current + 1;
-      requestRef.current = requestId;
-      setThinking(true);
-      worker.postMessage(
-        {
-          baseUrl: BUNDLE_URL,
-          moves: nextMoves,
-          requestId,
-          size,
-          timeMs: SEARCH_TIME_MS,
-          type: "move",
-        },
-        []
-      );
+  const clearMove = useCallback(
+    (next: number[]) => {
+      applyMoves(next);
+      setLastMove(null);
+      setSearchSummary(null);
+      previousActionRef.current = null;
     },
-    [size]
+    [applyMoves]
   );
 
-  const position = useMemo(() => replayMoves(size, moves), [size, moves]);
-  const legal = useMemo(() => legalActions(position), [position]);
-  const result = useMemo(() => resultOf(position), [position]);
-  const gameOver = trailingPasses(moves, size) >= 2;
+  const view = useMemo(() => boardViewOf(size, moves), [size, moves]);
 
-  useEffect(() => {
-    const worker = new Worker(
-      new URL("../workers/flygo-worker.ts", import.meta.url),
-      { type: "module" }
-    );
-    workerRef.current = worker;
-    const requestId = requestRef.current + 1;
-    requestRef.current = requestId;
-
-    const receive = (event: MessageEvent<FlyGoWorkerResponse>) => {
-      const response = event.data;
-      if (response.requestId !== requestRef.current) {
-        return;
-      }
-      if (response.type === "error") {
-        setFailure(response.message);
-        setThinking(false);
-        stopSelfPlay();
-        return;
-      }
-      setActivity(response.activity);
-      if (response.type === "ready") {
-        markReady(true);
-        if (selfPlayRef.current) {
-          requestMove(movesRef.current);
+  const { deactivate, initialize, move, ready, readyRef, thinking } =
+    useFlyGoWorker(size, SEARCH_TIME_MS, {
+      acted: (result, search) => {
+        const previous = previousActionRef.current;
+        const nextMoves = [...movesRef.current, result.action];
+        applyMoves(nextMoves);
+        setActivity(result.activity);
+        setLastMove(
+          result.action === view.passAction ? previous : result.action
+        );
+        setSearchSummary(
+          `${result.simulations} simulations in ${Math.round(result.elapsedMs)} ms`
+        );
+        previousActionRef.current = result.action;
+        if (selfPlayRef.current && !isFinished(size, nextMoves)) {
+          search(nextMoves);
+          return;
         }
-        return;
-      }
-      const pass = passActionFor(size);
-      const previous = previousActionRef.current;
-      const nextMoves = [...movesRef.current, response.action];
-      applyMoves(nextMoves);
-      setLastMove(response.action === pass ? previous : response.action);
-      setSearchSummary(
-        `${response.simulations} simulations in ${Math.round(response.elapsedMs)} ms`
-      );
-      previousActionRef.current = response.action;
-      if (selfPlayRef.current && trailingPasses(nextMoves, size) < 2) {
-        requestMove(nextMoves);
-        return;
-      }
-      stopSelfPlay();
-      setThinking(false);
-    };
-    const fail = (event: ErrorEvent) => {
-      setFailure(event.message || "The search worker failed");
-      setThinking(false);
-      stopSelfPlay();
-    };
-    worker.addEventListener("message", receive);
-    worker.addEventListener("error", fail);
-    worker.postMessage(
-      {
-        baseUrl: BUNDLE_URL,
-        requestId,
-        size,
-        type: "initialize",
+        stopSelfPlay();
       },
-      []
-    );
-    return () => {
-      worker.removeEventListener("message", receive);
-      worker.removeEventListener("error", fail);
-      worker.terminate();
-      if (workerRef.current === worker) {
-        workerRef.current = null;
-      }
-    };
-  }, [requestMove, applyMoves, markReady, size, stopSelfPlay]);
+      failed: (message) => {
+        setFailure(message);
+        stopSelfPlay();
+      },
+      ready: (reading, search) => {
+        setActivity(reading);
+        if (selfPlayRef.current) {
+          search(movesRef.current);
+        }
+      },
+    });
 
   const play = useCallback(
     (action: number) => {
-      const worker = workerRef.current;
       if (
-        selfPlay ||
-        !(worker && ready) ||
-        thinking ||
-        gameOver ||
-        !legal.includes(action)
+        !canPlay(
+          {
+            gameOver: view.gameOver,
+            legal: view.legal,
+            ready,
+            selfPlay,
+            thinking,
+          },
+          action
+        )
       ) {
         return;
       }
       try {
         const nextMoves = [...movesRef.current, action];
-        replayMoves(size, nextMoves);
+        const next = boardViewOf(size, nextMoves);
         applyMoves(nextMoves);
         setFailure(null);
         setSearchSummary(null);
         previousActionRef.current = action;
-        if (trailingPasses(nextMoves, size) >= 2) {
-          setLastMove(action === passActionFor(size) ? lastMove : action);
+        if (next.gameOver) {
+          setLastMove(action === view.passAction ? lastMove : action);
           return;
         }
-        requestMove(nextMoves);
+        move(nextMoves);
       } catch (error: unknown) {
         setFailure(messageOf(error));
       }
     },
     [
-      gameOver,
-      lastMove,
-      legal,
-      ready,
-      requestMove,
-      selfPlay,
       applyMoves,
+      lastMove,
+      move,
+      ready,
+      selfPlay,
       size,
       thinking,
+      view.gameOver,
+      view.legal,
+      view.passAction,
     ]
   );
-
-  const startSelfPlay = useCallback(() => {
-    selfPlayRef.current = true;
-    setSelfPlay(true);
-    applyMoves([]);
-    setLastMove(null);
-    setSearchSummary(null);
-    setFailure(null);
-    previousActionRef.current = null;
-    // A move request before the bundle is ready would advance the request
-    // counter, and the dropped initialize response would leave the board
-    // loading. The ready response starts this game instead.
-    if (readyRef.current) {
-      requestMove([]);
-    }
-  }, [requestMove, applyMoves]);
 
   const toggleSelfPlay = useCallback(() => {
     if (selfPlayRef.current) {
       stopSelfPlay();
       return;
     }
-    startSelfPlay();
-  }, [startSelfPlay, stopSelfPlay]);
+    selfPlayRef.current = true;
+    setSelfPlay(true);
+    setFailure(null);
+    clearMove([]);
+    // A search request before the bundle is ready would advance the request
+    // counter, and the dropped initialize response would leave the board
+    // loading. The ready response starts this game instead.
+    if (readyRef.current) {
+      move([]);
+    }
+  }, [clearMove, move, readyRef, stopSelfPlay]);
 
   const reset = useCallback(() => {
-    applyMoves([]);
-    setLastMove(null);
-    setSearchSummary(null);
     setFailure(null);
-    setThinking(false);
-    previousActionRef.current = null;
-    const worker = workerRef.current;
-    if (worker) {
-      const requestId = requestRef.current + 1;
-      requestRef.current = requestId;
-      markReady(false);
-      worker.postMessage(
-        {
-          baseUrl: BUNDLE_URL,
-          requestId,
-          size,
-          type: "initialize",
-        },
-        []
-      );
-    }
-  }, [applyMoves, markReady, size]);
-
-  let status = "Your turn";
-  if (selfPlay) {
-    status = searchSummary
-      ? `FlyGo vs FlyGo · move ${moves.length} · ${searchSummary}`
-      : `FlyGo vs FlyGo · move ${moves.length + 1}`;
-  } else if (searchSummary) {
-    status = `Your turn · ${searchSummary}`;
-  }
-  if (gameOver) {
-    status = result.label;
-  } else if (!selfPlay && failure === null && (!ready || thinking)) {
-    status = "Thinking";
-  }
-  if (failure !== null) {
-    status = failure;
-  }
+    clearMove([]);
+    initialize();
+  }, [clearMove, initialize]);
 
   return {
     activity: [...activity],
-    board: position.board,
+    board: view.board,
     error: failure,
-    gameOver,
+    gameOver: view.gameOver,
     isLoading: !ready || thinking,
     lastMove,
-    legalActions: legal,
+    legalActions: view.legal,
     play,
     reset,
     selectSize: (next: number) => {
       if (next !== size) {
-        markReady(false);
-        setThinking(false);
         setFailure(null);
         setActivity(new Float32Array(0));
         setSize(next);
-        applyMoves([]);
-        setLastMove(null);
-        setSearchSummary(null);
-        previousActionRef.current = null;
+        clearMove([]);
+        deactivate();
       }
     },
     selfPlay,
     size,
-    status,
+    status: statusOf({
+      failure,
+      gameOver: view.gameOver,
+      moveCount: moves.length,
+      ready,
+      result: view.result,
+      searchSummary,
+      selfPlay,
+      thinking,
+    }),
     toggleSelfPlay,
   };
 };
