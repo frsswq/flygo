@@ -9,12 +9,13 @@
 import { z } from "zod";
 
 import type { Position } from "@/lib/go-rules";
-import { pointsFor } from "@/lib/go-rules";
+import { pointsFor, RULESET } from "@/lib/go-rules";
 
 const GRAPH_MAGIC = 0x47_59_4c_46;
 const POLICY_MAGIC = 0x50_59_4c_46;
 const GRAPH_VERSION = 1;
 const POLICY_VERSION = 2;
+const SHA256_PATTERN = /^[0-9a-f]{64}$/u;
 
 const manifestSchema = z.object({
   dynamics: z.object({
@@ -27,7 +28,7 @@ const manifestSchema = z.object({
     edge_count: z.number().int().min(1),
     file: z.string(),
     node_count: z.number().int().min(1),
-    sha256: z.string(),
+    sha256: z.string().regex(SHA256_PATTERN),
   }),
   policies: z.array(
     z.object({
@@ -35,6 +36,7 @@ const manifestSchema = z.object({
       feature_count: z.number().int().min(1),
       file: z.string(),
       seed: z.number().int(),
+      sha256: z.string().regex(SHA256_PATTERN),
       size: z.number().int().min(2),
     })
   ),
@@ -68,6 +70,20 @@ export interface Dynamics {
   readonly steps: number;
 }
 
+/** Identity a graph binary must reproduce to belong to its manifest entry. */
+export interface GraphIdentity {
+  readonly edge_count: number;
+  readonly node_count: number;
+}
+
+/** Identity a policy binary must reproduce to belong to its bundle. */
+export interface PolicyIdentity {
+  readonly actionCount: number;
+  readonly featureCount: number;
+  readonly nodeCount: number;
+  readonly size: number;
+}
+
 export interface WebBundle {
   readonly dynamics: Dynamics;
   readonly graph: GraphBundle;
@@ -84,7 +100,17 @@ const readHeader = (buffer: ArrayBuffer, length: number): DataView => {
   return new DataView(buffer);
 };
 
-export const parseGraph = (buffer: ArrayBuffer): GraphBundle => {
+/** Reject a bundle array that holds any non-finite value. */
+const requireFinite = (values: Float32Array, message: string): void => {
+  if (!values.every(Number.isFinite)) {
+    throw new RangeError(message);
+  }
+};
+
+export const parseGraph = (
+  buffer: ArrayBuffer,
+  identity: GraphIdentity
+): GraphBundle => {
   const view = readHeader(buffer, 16);
   const magic = view.getUint32(0, true);
   const version = view.getUint32(4, true);
@@ -96,6 +122,9 @@ export const parseGraph = (buffer: ArrayBuffer): GraphBundle => {
   }
   const nodeCount = view.getUint32(8, true);
   const edgeCount = view.getUint32(12, true);
+  if (nodeCount !== identity.node_count || edgeCount !== identity.edge_count) {
+    throw new RangeError("Graph bundle header does not match the manifest");
+  }
   const expected = 16 + nodeCount * 4 + edgeCount * 4 * 3 + nodeCount * 4;
   if (buffer.byteLength !== expected) {
     throw new RangeError(
@@ -112,6 +141,16 @@ export const parseGraph = (buffer: ArrayBuffer): GraphBundle => {
   const weights = new Float32Array(buffer, offset, edgeCount);
   offset += edgeCount * 4;
   const incomingStrength = new Float32Array(buffer, offset, nodeCount);
+  requireFinite(weights, "Graph bundle holds non-finite numbers");
+  requireFinite(incomingStrength, "Graph bundle holds non-finite numbers");
+  if (incomingStrength.includes(0)) {
+    throw new RangeError("Graph bundle holds a zero incoming strength");
+  }
+  const insideBoard = (indices: Uint32Array): boolean =>
+    indices.every((index) => index < nodeCount);
+  if (!(insideBoard(sources) && insideBoard(targets))) {
+    throw new RangeError("Graph bundle holds an out-of-range edge index");
+  }
   return {
     edgeCount,
     incomingStrength,
@@ -123,7 +162,10 @@ export const parseGraph = (buffer: ArrayBuffer): GraphBundle => {
   };
 };
 
-export const parsePolicy = (buffer: ArrayBuffer): PolicyBundle => {
+export const parsePolicy = (
+  buffer: ArrayBuffer,
+  identity: PolicyIdentity
+): PolicyBundle => {
   const view = readHeader(buffer, 24);
   const magic = view.getUint32(0, true);
   const version = view.getUint32(4, true);
@@ -137,6 +179,21 @@ export const parsePolicy = (buffer: ArrayBuffer): PolicyBundle => {
   const nodeCount = view.getUint32(12, true);
   const featureCount = view.getUint32(16, true);
   const actionCount = view.getUint32(20, true);
+  if (nodeCount !== identity.nodeCount) {
+    throw new RangeError("Policy bundle node count does not match the graph");
+  }
+  if (
+    size !== identity.size ||
+    featureCount !== identity.featureCount ||
+    actionCount !== identity.actionCount
+  ) {
+    throw new RangeError("Policy bundle header does not match the manifest");
+  }
+  if (featureCount !== 2 * size * size + 1 || actionCount !== size * size + 1) {
+    throw new RangeError(
+      "Policy bundle dimensions do not match its board size"
+    );
+  }
   const expected =
     24 +
     nodeCount * featureCount * 4 +
@@ -158,6 +215,9 @@ export const parsePolicy = (buffer: ArrayBuffer): PolicyBundle => {
     24 + nodeCount * featureCount * 4 + actionCount * nodeCount * 4,
     nodeCount
   );
+  requireFinite(encoder, "Policy bundle holds non-finite weights");
+  requireFinite(readout, "Policy bundle holds non-finite weights");
+  requireFinite(valueReadout, "Policy bundle holds non-finite weights");
   return { actionCount, encoder, featureCount, readout, size, valueReadout };
 };
 
@@ -305,6 +365,21 @@ export const chooseAction = (
   return best;
 };
 
+/** Compare a fetched bundle file with the digest its manifest recorded. */
+const verifyDigest = async (
+  buffer: ArrayBuffer,
+  expected: string,
+  name: string
+): Promise<void> => {
+  const digest = await crypto.subtle.digest("SHA-256", buffer);
+  const actual = [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  if (actual !== expected) {
+    throw new Error(`Bundle file ${name} does not match its manifest sha256`);
+  }
+};
+
 /** Fetch a bundle written by `flygo export-web`. */
 export const loadWebBundle = async (
   baseUrl: string,
@@ -318,6 +393,9 @@ export const loadWebBundle = async (
     );
   }
   const manifest = parseManifest(await manifestResponse.json());
+  if (manifest.ruleset !== RULESET) {
+    throw new Error(`Bundle ruleset ${manifest.ruleset} is not supported`);
+  }
   const entry = manifest.policies.find((policy) => policy.size === size);
   if (!entry) {
     throw new RangeError(
@@ -331,11 +409,27 @@ export const loadWebBundle = async (
   if (!(graphResponse.ok && policyResponse.ok)) {
     throw new Error("Bundle files failed to load");
   }
+  const [graphBuffer, policyBuffer] = await Promise.all([
+    graphResponse.arrayBuffer(),
+    policyResponse.arrayBuffer(),
+  ]);
+  await Promise.all([
+    verifyDigest(graphBuffer, manifest.graph.sha256, manifest.graph.file),
+    verifyDigest(policyBuffer, entry.sha256, entry.file),
+  ]);
   return {
     dynamics: dynamicsOf(manifest),
-    graph: parseGraph(await graphResponse.arrayBuffer()),
+    graph: parseGraph(graphBuffer, manifest.graph),
     policies: new Map([
-      [size, parsePolicy(await policyResponse.arrayBuffer())],
+      [
+        size,
+        parsePolicy(policyBuffer, {
+          actionCount: entry.action_count,
+          featureCount: entry.feature_count,
+          nodeCount: manifest.graph.node_count,
+          size: entry.size,
+        }),
+      ],
     ]),
     ruleset: manifest.ruleset,
   };

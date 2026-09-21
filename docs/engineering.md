@@ -34,6 +34,8 @@ uv run flygo export-web --policy data/models/flygo-19.npz
 `src/flygo/export.py` defines every little-endian byte offset.
 Policy bundle version 2 contains the encoder, policy readout, and value readout.
 The manifest records dynamics, dimensions, SHA-256 values, checkpoint metadata, and whether each policy is trained.
+Before inference, the browser verifies every referenced file against its recorded SHA-256, then checks the ruleset, the graph and policy headers, edge-index bounds, incoming-strength denominators, and that all weights are finite.
+It rejects a mismatched bundle instead of searching with a partly valid model.
 The 19x19 graph and policy currently total about 2.0 MB.
 
 The static browser performs inference locally.

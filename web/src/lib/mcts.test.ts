@@ -26,12 +26,17 @@ const bufferOf = (name: string): ArrayBuffer => {
 const manifest = parseManifest(
   JSON.parse(readFileSync(new URL("manifest.json", root), "utf-8"))
 );
-const graph = parseGraph(bufferOf(manifest.graph.file));
+const graph = parseGraph(bufferOf(manifest.graph.file), manifest.graph);
 const entry = manifest.policies.find((policy) => policy.size === 5);
 if (!entry) {
   throw new Error("The fixture bundle has no 5x5 policy");
 }
-const policy = parsePolicy(bufferOf(entry.file));
+const policy = parsePolicy(bufferOf(entry.file), {
+  actionCount: entry.action_count,
+  featureCount: entry.feature_count,
+  nodeCount: manifest.graph.node_count,
+  size: entry.size,
+});
 
 describe("browser MCTS", () => {
   it("returns a visited legal action with a fixed simulation budget", () => {

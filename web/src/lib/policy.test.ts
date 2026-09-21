@@ -65,7 +65,7 @@ const readBuffer = (name: string): ArrayBuffer => {
 const manifest = parseManifest(
   JSON.parse(readBytes("manifest.json").toString("utf-8"))
 );
-const graph = parseGraph(readBuffer(manifest.graph.file));
+const graph = parseGraph(readBuffer(manifest.graph.file), manifest.graph);
 
 const maxDifference = (actual: Float32Array, expected: number[]): number => {
   let worst = 0;
@@ -111,7 +111,12 @@ describe("browser policy conformance with the Python engine", () => {
           `The bundle has no policy for a ${testCase.size} board`
         );
       }
-      const policy = parsePolicy(readBuffer(entry.file));
+      const policy = parsePolicy(readBuffer(entry.file), {
+        actionCount: entry.action_count,
+        featureCount: entry.feature_count,
+        nodeCount: manifest.graph.node_count,
+        size: entry.size,
+      });
       const position = replayMoves(testCase.size, testCase.moves);
       const activity = activityOf(
         graph,
