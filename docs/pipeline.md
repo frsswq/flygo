@@ -9,7 +9,8 @@ The [pinned KataGo pilot](teacher-pilot.md) provides a small, real-data recipe f
 
 Use legally reusable 19x19 SGF records with 7.5 komi and a black or white result.
 FlyGo reads every game in an SGF collection but follows only its main variation.
-It rejects setup stones, unsupported sizes, wrong komi, invalid turn order, illegal moves, games without a winner, and moves after two passes.
+It rejects setup stones anywhere in the main line, unsupported sizes, wrong komi, invalid turn order, illegal moves, games without a winner, and moves after two passes.
+Setup stones are rejected before any dataset or teacher-query file is written, because a move-only main line cannot reproduce the edited board.
 
 Keep source licenses and download metadata beside the raw corpus.
 Do not commit a corpus unless its license permits redistribution.

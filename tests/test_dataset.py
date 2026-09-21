@@ -38,6 +38,45 @@ def test_sgf_rejects_unsupported_or_unscored_games() -> None:
         parse_sgf_collection(b"(;SZ[19]KM[7.5];B[aa])")
 
 
+@pytest.mark.parametrize(
+    ("body", "node_number"),
+    [
+        (b";B[aa];AB[bb];W[cc]", 3),
+        (b";B[aa];AW[bb];W[cc]", 3),
+        (b";B[aa];AE[bb];W[cc]", 3),
+        (b";B[aa]AB[bb];W[cc]", 2),
+        (b";B[aa]AW[bb];W[cc]", 2),
+    ],
+)
+def test_sgf_rejects_setup_stones_after_the_root(body: bytes, node_number: int) -> None:
+    payload = b"(;FF[4]GM[1]SZ[5]KM[0]RE[B+R]" + body + b")"
+
+    with pytest.raises(ValueError, match=f"setup stones at node {node_number}"):
+        parse_sgf_collection(payload)
+
+
+def test_sgf_rejects_root_setup_stones() -> None:
+    with pytest.raises(ValueError, match="setup stones at node 1"):
+        parse_sgf_collection(b"(;FF[4]GM[1]SZ[5]KM[0]RE[B+R]AB[bb];W[cc])")
+
+
+def test_sgf_without_setup_stones_is_unchanged() -> None:
+    (game,) = parse_sgf_collection(b"(;FF[4]GM[1]SZ[5]KM[0]RE[B+R];B[aa];W[cc];B[dd])")
+
+    assert game.moves == (20, 12, 8)
+
+
+def test_build_dataset_rejects_setup_stones_before_publishing(tmp_path: Path) -> None:
+    sgf_path = tmp_path / "setup.sgf"
+    sgf_path.write_bytes(b"(;FF[4]GM[1]SZ[5]KM[0]RE[B+R];B[aa];AW[bb];W[cc];B[dd])")
+    output = tmp_path / "dataset"
+
+    with pytest.raises(ValueError, match="setup stones at node 3"):
+        build_dataset(load_sgf_games([sgf_path]), output, size=5)
+
+    assert not output.exists()
+
+
 def test_dataset_keeps_complete_games_in_one_split(tmp_path: Path) -> None:
     sgf_path = tmp_path / "game.sgf"
     sgf_path.write_bytes(SGF)

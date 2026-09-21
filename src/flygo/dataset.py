@@ -71,9 +71,6 @@ def parse_sgf_collection(payload: bytes) -> tuple[GameRecord, ...]:
             raise ValueError(f"Game {index} uses unsupported board size {size}")
         if game.get_komi() != komi_for(size):
             raise ValueError(f"Game {index} does not use {komi_for(size):g} komi")
-        root = game.get_root()
-        if root.has_setup_stones():
-            raise ValueError(f"Game {index} uses setup stones")
         winner_name = game.get_winner()
         if winner_name is None:
             raise ValueError(f"Game {index} has no black or white winner")
@@ -81,7 +78,12 @@ def parse_sgf_collection(payload: bytes) -> tuple[GameRecord, ...]:
         position = Position.empty(size)
         moves: list[int] = []
         consecutive_passes = 0
-        for node in game.get_main_sequence():
+        for node_number, node in enumerate(game.get_main_sequence(), start=1):
+            if node.has_setup_stones():
+                raise ValueError(
+                    f"Game {index} uses setup stones at node {node_number}; "
+                    "FlyGo replays move-only main lines"
+                )
             colour, move = node.get_move()
             if colour is None:
                 continue
