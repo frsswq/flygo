@@ -11,7 +11,7 @@ import type {
 
 const bundles = new Map<string, Promise<WebBundle>>();
 
-const bundleOf = (baseUrl: string, size: number): Promise<WebBundle> => {
+const bundleOf = async (baseUrl: string, size: number): Promise<WebBundle> => {
   const key = `${baseUrl}:${size}`;
   const cached = bundles.get(key);
   if (cached) {
@@ -19,7 +19,16 @@ const bundleOf = (baseUrl: string, size: number): Promise<WebBundle> => {
   }
   const loading = loadWebBundle(baseUrl, size);
   bundles.set(key, loading);
-  return loading;
+  try {
+    return await loading;
+  } catch (error: unknown) {
+    // A transient failure must not poison the cache, but an older load must not
+    // evict a newer one that already replaced it.
+    if (bundles.get(key) === loading) {
+      bundles.delete(key);
+    }
+    throw error;
+  }
 };
 
 const send = (response: FlyGoWorkerResponse): void => {
