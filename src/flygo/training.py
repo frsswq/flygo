@@ -23,7 +23,7 @@ from flygo.model import (
     validate_dynamics,
 )
 
-CHECKPOINT_VERSION = 2
+CHECKPOINT_VERSION = 3
 
 
 @dataclass(frozen=True)
@@ -45,12 +45,16 @@ class EpochMetrics:
 
 def graph_sha256(connectome: FrozenConnectome) -> str:
     digest = hashlib.sha256()
+    digest.update(b"flygo-effective-graph-v2\0")
     for array in (
         connectome.node_ids,
         connectome.source_indices,
         connectome.target_indices,
         connectome.weights,
+        connectome.incoming_strength,
     ):
+        digest.update(str(array.dtype).encode())
+        digest.update(np.asarray(array.shape, dtype="<u8").tobytes())
         digest.update(array.tobytes())
     return digest.hexdigest()
 
@@ -419,6 +423,10 @@ def load_policy(
         readout = archive["readout"].astype(np.float32)
         value_readout = archive["value_readout"].astype(np.float32)
         metadata = json.loads(str(archive["metadata"]))
+    if metadata.get("version") == 2:
+        raise ValueError(
+            "Policy checkpoint predates normalization-aware graph identity; retrain it"
+        )
     if metadata.get("version") != CHECKPOINT_VERSION:
         raise ValueError("Unsupported policy checkpoint version")
     size = metadata.get("size")

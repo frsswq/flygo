@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -139,6 +140,42 @@ def test_checkpoint_is_bound_to_the_frozen_graph(tmp_path: Path) -> None:
     other = from_frame(pl.DataFrame({"pre": [1], "post": [2], "weight": [9]}))
     with pytest.raises(ValueError, match="different graph"):
         load_policy(path, other)
+
+
+def test_checkpoint_identity_includes_graph_normalization(tmp_path: Path) -> None:
+    normalized = graph()
+    unnormalized = normalized.without_normalization()
+    policy = ConnectomePolicy.initialize(unnormalized, size=5)
+    path = tmp_path / "policy.npz"
+    save_policy(path, policy)
+
+    with pytest.raises(ValueError, match="different graph"):
+        load_policy(path, normalized)
+
+    restored, _ = load_policy(path, unnormalized)
+    assert isinstance(restored, ConnectomePolicy)
+
+
+def test_checkpoint_without_normalization_identity_is_rejected(tmp_path: Path) -> None:
+    policy = ConnectomePolicy.initialize(graph(), size=5)
+    path = tmp_path / "legacy-policy.npz"
+    save_policy(path, policy)
+    with np.load(path, allow_pickle=False) as archive:
+        encoder = archive["encoder"].copy()
+        readout = archive["readout"].copy()
+        value_readout = archive["value_readout"].copy()
+        metadata = json.loads(str(archive["metadata"]))
+    metadata["version"] = 2
+    np.savez_compressed(
+        path,
+        encoder=encoder,
+        readout=readout,
+        value_readout=value_readout,
+        metadata=np.asarray(json.dumps(metadata)),
+    )
+
+    with pytest.raises(ValueError, match="predates normalization-aware graph identity"):
+        load_policy(path, graph())
 
 
 def test_mean_loss_gradients_match_configured_inference_for_every_parameter() -> None:

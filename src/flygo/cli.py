@@ -142,6 +142,12 @@ def parser() -> argparse.ArgumentParser:
     export = commands.add_parser("export-web", help="Write the browser graph and policy bundle")
     export.add_argument("--output", type=Path, default=DEFAULT_BUNDLE)
     export.add_argument("--policy", type=Path)
+    export.add_argument(
+        "--normalization",
+        choices=("incoming", "none"),
+        default="incoming",
+        help="Divide the recurrent sum by incoming strength, or leave it unnormalized",
+    )
 
     policy_fixture = commands.add_parser(
         "policy-conformance",
@@ -353,7 +359,11 @@ def main() -> None:
             f"{arguments.output}: {len(fixture['cases'])} cases, {len(fixture['illegal'])} illegal"
         )
     elif arguments.command == "export-web":
-        manifest = write_web_bundle(arguments.output, policy_checkpoint=arguments.policy)
+        manifest = write_web_bundle(
+            arguments.output,
+            policy_checkpoint=arguments.policy,
+            normalization=arguments.normalization,
+        )
         sizes = estimate_bundle(arguments.output)
         print(
             f"{arguments.output}: {manifest['graph']['node_count']} neurons, {sizes['total']} bytes"

@@ -136,6 +136,12 @@ Review this count before accepting a report.
 
 ```bash
 uv run flygo export-web --policy data/models/flygo-19.npz
+```
+
+Use `--normalization none` when the checkpoint was trained without incoming-strength normalization.
+Export rejects a checkpoint whose graph normalization does not match this option.
+
+```bash
 uv run flygo policy-conformance
 make static
 make check

@@ -41,7 +41,8 @@ This keeps the UI responsive and avoids Cloudflare Worker CPU limits.
 `src/flygo/training.py` implements batched NumPy forward and backward passes through the frozen sparse recurrent graph.
 Adam updates only the encoder, policy readout, and value readout.
 Training applies random dihedral symmetry per example.
-Checkpoints bind to a SHA-256 of graph arrays and fail to load with another graph.
+Checkpoint version 3 binds to a SHA-256 of every behavior-defining graph array, including incoming-strength normalization, and fails to load with another effective graph.
+Version 2 checkpoints are rejected because their identity cannot distinguish normalization modes.
 Checkpoints also record the recurrent steps, retention, and recurrent gain, so inference cannot silently use other dynamics.
 
 `src/flygo/circuit.py` selects connected experiment circuits with one deterministic rule.

@@ -26,7 +26,7 @@ import json
 import struct
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
@@ -140,11 +140,16 @@ def write_web_bundle(
     retention: float = DEFAULT_RETENTION,
     recurrent_gain: float = DEFAULT_RECURRENT_GAIN,
     policy_checkpoint: Path | None = None,
+    normalization: Literal["incoming", "none"] = "incoming",
 ) -> dict[str, Any]:
     """Write the browser binaries and manifest, and return the manifest."""
     from flygo.connectome import load_connectome
 
     connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
+    if normalization == "none":
+        connectome = connectome.without_normalization()
+    elif normalization != "incoming":
+        raise ValueError(f"Unsupported graph normalization: {normalization}")
     policies = build_policies(
         connectome,
         steps=steps,
@@ -197,7 +202,7 @@ def write_web_bundle(
         },
         "dynamics": {
             "activation": "tanh",
-            "normalization": "incoming weight sum",
+            "normalization": ("incoming weight sum" if normalization == "incoming" else "none"),
             "recurrent_gain": recurrent_gain,
             "retention": retention,
             "steps": steps,
@@ -221,18 +226,23 @@ def load_web_policies(bundle: Path) -> dict[int, ConnectomePolicy]:
     from flygo.connectome import load_connectome
 
     manifest = json.loads((bundle / MANIFEST_FILE).read_text())
+    dynamics = manifest["dynamics"]
+    if set(dynamics) != {"activation", "normalization", "retention", "recurrent_gain", "steps"}:
+        raise ValueError("Unsupported browser dynamics")
+    normalization = dynamics["normalization"]
     connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
+    if normalization == "none":
+        connectome = connectome.without_normalization()
+    elif normalization != "incoming weight sum":
+        raise ValueError("Unsupported browser normalization")
     graph_bytes = (bundle / GRAPH_FILE).read_bytes()
     if graph_bytes != _graph_bytes(connectome):
         raise ValueError("Browser bundle has a different graph")
     if hashlib.sha256(graph_bytes).hexdigest() != manifest["graph"]["sha256"]:
         raise ValueError("Browser graph hash does not match the manifest")
-    dynamics = manifest["dynamics"]
     steps = dynamics["steps"]
-    if set(dynamics) != {"activation", "normalization", "retention", "recurrent_gain", "steps"}:
-        raise ValueError("Unsupported browser dynamics")
-    if dynamics["activation"] != "tanh" or dynamics["normalization"] != "incoming weight sum":
-        raise ValueError("Unsupported browser activation or normalization")
+    if dynamics["activation"] != "tanh":
+        raise ValueError("Unsupported browser activation")
     retention = dynamics["retention"]
     recurrent_gain = dynamics["recurrent_gain"]
     if any(isinstance(value, bool) for value in (retention, recurrent_gain)):

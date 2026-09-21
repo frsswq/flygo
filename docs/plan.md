@@ -86,7 +86,7 @@ Neither these counts nor the sample profile proves which component dominates the
 - `experiment --graph` already supports selected circuits, but such a checkpoint cannot currently follow the documented export path.
 - Export supports `ConnectomePolicy`, not the `linear` or `mlp` checkpoint types.
 - Export has one shared graph and one shared dynamics object for both board sizes.
-- The Python bundle loader assumes incoming normalization and the bundled graph.
+- The Python bundle loader supports both normalization modes but still assumes the bundled sample graph.
 - The browser loader parses binary layouts but does not yet verify every manifest hash and cross-file dimension at runtime.
 - `report.json` currently summarizes paired validation differences only, even with `--final-test`.
 - Python and browser traversal break equal PUCT scores differently: Python compares priors before action indices, while the browser currently compares action indices directly.

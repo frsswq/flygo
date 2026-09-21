@@ -18,6 +18,7 @@ const POLICY_VERSION = 2;
 
 const manifestSchema = z.object({
   dynamics: z.object({
+    normalization: z.enum(["incoming weight sum", "none"]),
     recurrent_gain: z.number(),
     retention: z.number(),
     steps: z.number().int().min(1).max(32),
