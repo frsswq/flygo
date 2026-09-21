@@ -100,6 +100,7 @@ def import_katago_analysis(
         raise ValueError("winrate perspective must be black, white, or side-to-move")
     sizes = {game.game_id: game.size for game in games}
     targets: dict[str, dict[str, Any]] = {}
+    provisional = 0
     for line_number, line in enumerate(input_path.read_text().splitlines(), 1):
         if not line.strip():
             continue
@@ -107,15 +108,21 @@ def import_katago_analysis(
             payload = json.loads(line)
             game_id = str(payload["id"])
             turn = int(payload["turnNumber"])
+            during_search = payload.get("isDuringSearch", False)
+            if not isinstance(during_search, bool):
+                raise ValueError("isDuringSearch must be a boolean")
             root = payload["rootInfo"]
             winrate = float(root["winrate"])
             move_infos = payload["moveInfos"]
             size = sizes[game_id]
         except (KeyError, TypeError, ValueError) as error:
             raise ValueError(f"Invalid KataGo response on line {line_number}") from error
+        if during_search:
+            provisional += 1
+            continue
         identifier = sample_id(game_id, turn)
         if identifier in targets:
-            raise ValueError(f"Duplicate KataGo response for {identifier}")
+            raise ValueError(f"Duplicate final KataGo response for {identifier}")
         visits = [(gtp_to_action(item["move"], size), int(item["visits"])) for item in move_infos]
         visits = [(action, count) for action, count in visits if count > 0]
         if not visits:
@@ -130,6 +137,10 @@ def import_katago_analysis(
             "policy": visits,
             "value": value,
         }
+    if provisional and not targets:
+        raise ValueError(
+            f"KataGo analysis has only provisional responses ({provisional}); no search finished"
+        )
     output.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(dir=output.parent, prefix=f".{output.name}.")
     try:

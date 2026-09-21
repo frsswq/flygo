@@ -159,6 +159,96 @@ def test_katago_protocol_round_trip(tmp_path: Path) -> None:
     assert targets[sample_id(game.game_id, 1)].value == -0.5
 
 
+def test_teacher_import_uses_final_responses_not_interim_updates(tmp_path: Path) -> None:
+    (game,) = parse_sgf_collection(SGF)
+    analysis_path = tmp_path / "analysis.jsonl"
+    analysis_path.write_text(
+        "".join(
+            json.dumps(response) + "\n"
+            for response in (
+                {
+                    "id": game.game_id,
+                    "turnNumber": 0,
+                    "isDuringSearch": True,
+                    "rootInfo": {"winrate": 0.25},
+                    "moveInfos": [{"move": "pass", "visits": 1}],
+                },
+                {
+                    "id": game.game_id,
+                    "turnNumber": 0,
+                    "isDuringSearch": False,
+                    "rootInfo": {"winrate": 0.75},
+                    "moveInfos": [{"move": "Q4", "visits": 64}, {"move": "D16", "visits": 32}],
+                },
+                {
+                    "id": game.game_id,
+                    "turnNumber": 1,
+                    "isDuringSearch": True,
+                    "rootInfo": {"winrate": 0.25},
+                    "moveInfos": [{"move": "pass", "visits": 1}],
+                },
+                {
+                    "id": game.game_id,
+                    "turnNumber": 1,
+                    "rootInfo": {"winrate": 0.75},
+                    "moveInfos": [{"move": "D4", "visits": 64}],
+                },
+            )
+        )
+    )
+    teacher_path = tmp_path / "teacher.jsonl"
+
+    assert import_katago_analysis(analysis_path, teacher_path, [game]) == 2
+
+    targets = load_teacher_targets(teacher_path)
+    first = targets[sample_id(game.game_id, 0)]
+    assert first.policy == {300: 2 / 3, 60: 1 / 3}
+    assert first.value == 0.5
+    assert targets[sample_id(game.game_id, 1)].value == -0.5
+
+
+def test_teacher_import_rejects_provisional_only_analysis(tmp_path: Path) -> None:
+    (game,) = parse_sgf_collection(SGF)
+    analysis_path = tmp_path / "analysis.jsonl"
+    analysis_path.write_text(
+        "".join(
+            json.dumps(
+                {
+                    "id": game.game_id,
+                    "turnNumber": turn,
+                    "isDuringSearch": True,
+                    "rootInfo": {"winrate": 0.75},
+                    "moveInfos": [{"move": "pass", "visits": 1}],
+                }
+            )
+            + "\n"
+            for turn in (0, 1)
+        )
+    )
+    teacher_path = tmp_path / "teacher.jsonl"
+
+    with pytest.raises(ValueError, match="only provisional responses"):
+        import_katago_analysis(analysis_path, teacher_path, [game])
+
+    assert not teacher_path.exists()
+
+
+def test_teacher_import_rejects_duplicate_final_responses(tmp_path: Path) -> None:
+    (game,) = parse_sgf_collection(SGF)
+    response = {
+        "id": game.game_id,
+        "turnNumber": 0,
+        "isDuringSearch": False,
+        "rootInfo": {"winrate": 0.75},
+        "moveInfos": [{"move": "Q4", "visits": 64}],
+    }
+    analysis_path = tmp_path / "analysis.jsonl"
+    analysis_path.write_text(f"{json.dumps(response)}\n{json.dumps(response)}\n")
+
+    with pytest.raises(ValueError, match="Duplicate final KataGo response"):
+        import_katago_analysis(analysis_path, tmp_path / "teacher.jsonl", [game])
+
+
 def test_teacher_queries_sample_turns_without_losing_move_history(tmp_path: Path) -> None:
     games = parse_sgf_collection(SGF)
     path = tmp_path / "queries.jsonl"

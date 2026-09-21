@@ -58,6 +58,10 @@ uv run flygo teacher-import \
 Accepted perspective values are `black`, `white`, and `side-to-move`.
 The importer converts every value to the current player's perspective.
 It converts search visit counts into normalized policy targets.
+The importer keeps only final responses.
+It skips interim reports whose `isDuringSearch` is true, because those results are not finished labels.
+A stream with only provisional responses fails instead of writing an empty target file.
+Two final responses for the same game and turn are an error.
 
 ## 3. Build split datasets
 
