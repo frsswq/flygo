@@ -82,7 +82,9 @@ The policy fixture verifies binary hashes and cross-language activity, policy lo
 The browser regression at `web/browser/` runs from `npm run test:browser` with `playwright-core`.
 It builds a root-mounted app, serves it with a slow first bundle request, and drives a real Chromium.
 It covers self-play and reset during loading, rapid self-play toggles, and a board-size change while loading.
-`make check` keeps this suite separate because it needs a browser binary.
+`make browser` runs it, and `make check` runs it too when a browser binary is present.
+Without one, `make check` prints that the browser regression was skipped, so `npm run test:browser` stays the strict entry point.
+Set `BROWSER_BIN` when Chrome or Chromium is not in a standard location.
 
 ## Checks
 
@@ -92,7 +94,7 @@ Run every check with:
 make check
 ```
 
-The command runs Ruff formatting and linting, vulture, BasedPyright, pytest, Ultracite, TypeScript, knip, and Vitest.
+The command runs Ruff formatting and linting, vulture, BasedPyright, pytest, Ultracite, TypeScript, knip, and Vitest, then the browser regression when a Chrome or Chromium binary is available.
 It currently includes rules, SGF, connectome preparation, circuit selection, dataset, teacher, training, checkpoint, search, Elo, research controls, pilot scripts, API, binary, and browser conformance coverage.
 
 Build the FastAPI-mounted production artifact with:

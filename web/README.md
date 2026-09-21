@@ -25,7 +25,7 @@ npm run build
 
 The default build writes the FastAPI-mounted artifact to `../src/flygo/static/`. Run `make static` from the repository root to write a root-mounted Cloudflare artifact to `web/dist/`.
 
-`npm run test:browser` runs the browser regression instead of the unit suite. It builds a root-mounted app, serves it with a deliberately slow bundle, and drives a real Chromium through `playwright-core`. It covers self-play and reset during bundle loading, rapid self-play toggles, and a board-size change while loading. Set `BROWSER_BIN` when Chrome or Chromium is not in a standard location; without a browser binary the run fails with that instruction.
+`npm run test:browser` runs the browser regression instead of the unit suite. It builds a root-mounted app, serves it with a deliberately slow bundle, and drives a real Chromium through `playwright-core`. It covers self-play and reset during bundle loading, rapid self-play toggles, and a board-size change while loading. Set `BROWSER_BIN` when Chrome or Chromium is not in a standard location; without a browser binary the run fails with that instruction. `make browser` runs the same suite, and `make check` includes it whenever a browser binary is present.
 
 Generate browser weights from Python before a trained release:
 
