@@ -2,7 +2,7 @@ import { fileURLToPath, URL } from "node:url";
 
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // The FastAPI viewer serves the build under /static, while a static host such as
 // Cloudflare Pages serves it from the root. Both the base path and the output
@@ -29,5 +29,8 @@ export default defineConfig(({ command }) => ({
   },
   test: {
     environment: "node",
+    // The browser regression needs a real Chromium; run it with
+    // `npm run test:browser`.
+    exclude: [...configDefaults.exclude, "browser/**"],
   },
 }));

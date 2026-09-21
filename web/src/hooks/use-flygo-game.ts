@@ -30,6 +30,13 @@ export const useFlyGoGame = () => {
   const [searchSummary, setSearchSummary] = useState<string | null>(null);
   const workerRef = useRef<Worker | null>(null);
   const requestRef = useRef(0);
+  // Readiness is also kept in a ref, because callbacks must know whether the
+  // bundle has loaded without waiting for a render.
+  const readyRef = useRef(false);
+  const markReady = useCallback((next: boolean) => {
+    readyRef.current = next;
+    setReady(next);
+  }, []);
   const movesRef = useRef<number[]>([]);
   const selfPlayRef = useRef(false);
   const previousActionRef = useRef<number | null>(null);
@@ -97,7 +104,7 @@ export const useFlyGoGame = () => {
       }
       setActivity(response.activity);
       if (response.type === "ready") {
-        setReady(true);
+        markReady(true);
         if (selfPlayRef.current) {
           requestMove(movesRef.current);
         }
@@ -143,7 +150,7 @@ export const useFlyGoGame = () => {
         workerRef.current = null;
       }
     };
-  }, [requestMove, applyMoves, size, stopSelfPlay]);
+  }, [requestMove, applyMoves, markReady, size, stopSelfPlay]);
 
   const play = useCallback(
     (action: number) => {
@@ -194,7 +201,12 @@ export const useFlyGoGame = () => {
     setSearchSummary(null);
     setFailure(null);
     previousActionRef.current = null;
-    requestMove([]);
+    // A move request before the bundle is ready would advance the request
+    // counter, and the dropped initialize response would leave the board
+    // loading. The ready response starts this game instead.
+    if (readyRef.current) {
+      requestMove([]);
+    }
   }, [requestMove, applyMoves]);
 
   const toggleSelfPlay = useCallback(() => {
@@ -216,7 +228,7 @@ export const useFlyGoGame = () => {
     if (worker) {
       const requestId = requestRef.current + 1;
       requestRef.current = requestId;
-      setReady(false);
+      markReady(false);
       worker.postMessage(
         {
           baseUrl: BUNDLE_URL,
@@ -227,7 +239,7 @@ export const useFlyGoGame = () => {
         []
       );
     }
-  }, [applyMoves, size]);
+  }, [applyMoves, markReady, size]);
 
   let status = "Your turn";
   if (selfPlay) {
@@ -258,7 +270,7 @@ export const useFlyGoGame = () => {
     reset,
     selectSize: (next: number) => {
       if (next !== size) {
-        setReady(false);
+        markReady(false);
         setThinking(false);
         setFailure(null);
         setActivity(new Float32Array(0));

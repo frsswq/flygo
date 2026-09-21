@@ -79,6 +79,11 @@ uv run flygo policy-conformance
 Do not edit generated fixtures manually.
 The policy fixture verifies binary hashes and cross-language activity, policy logits, value, and action selection.
 
+The browser regression at `web/browser/` runs from `npm run test:browser` with `playwright-core`.
+It builds a root-mounted app, serves it with a slow first bundle request, and drives a real Chromium.
+It covers self-play and reset during loading, rapid self-play toggles, and a board-size change while loading.
+`make check` keeps this suite separate because it needs a browser binary.
+
 ## Checks
 
 Run every check with:

@@ -645,6 +645,8 @@ Test both mount paths, not only the Vite development server.
 
 In a real browser, verify load, a legal 19x19 reply, pass, reset during search, size switching, self-play, stale-response rejection, and error display for a corrupt bundle.
 Check the board and activity display for clipping or stale state while testing responsiveness.
+`npm run test:browser` already drives a real Chromium for delayed bundle loading, self-play and reset during loading, rapid self-play toggles, and a board-size change while loading.
+Extend that suite as M3 and M4 add search and reuse cases.
 
 Deploy only with owner approval using [deploy.md](deploy.md).
 After deployment, download the live manifest and referenced binaries, compare their hashes with the release report, and play a browser smoke game.
