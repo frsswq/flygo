@@ -166,3 +166,30 @@ def test_cli_requires_final_teacher_responses(tmp_path: Path) -> None:
             if arrays["value"].size:
                 np.testing.assert_allclose(arrays["value"], 0.5)
                 np.testing.assert_allclose(arrays["source"], 1)
+
+
+def test_cli_refuses_to_replace_a_published_dataset(tmp_path: Path) -> None:
+    sgf = tmp_path / "game.sgf"
+    sgf.write_bytes(b"(;SZ[5]KM[0]RE[B+R];B[aa];W[bb])")
+    output = tmp_path / "dataset"
+    command = [
+        "uv",
+        "run",
+        "--no-sync",
+        "flygo",
+        "build-dataset",
+        "--sgf",
+        str(sgf),
+        "--output",
+        str(output),
+        "--size",
+        "5",
+    ]
+    subprocess.run(command, check=True, capture_output=True)
+    published = {path.name: path.read_bytes() for path in output.iterdir()}
+
+    repeat = subprocess.run(command, capture_output=True, text=True)
+
+    assert repeat.returncode != 0
+    assert "already published" in repeat.stderr
+    assert {path.name: path.read_bytes() for path in output.iterdir()} == published

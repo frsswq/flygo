@@ -230,12 +230,21 @@ def main() -> None:
         from dataclasses import asdict
 
         from flygo.connectome import load_connectome
+        from flygo.dataset import published_split_paths
         from flygo.model import ConnectomePolicy
         from flygo.training import fit_policy, load_training_data, save_policy, selected_epoch
 
+        try:
+            splits = published_split_paths(arguments.dataset)
+        except (ValueError, OSError) as error:
+            raise SystemExit(str(error)) from error
+        missing = {"train", "validation"} - splits.keys()
+        if missing:
+            raise SystemExit(f"Dataset is missing the {', '.join(sorted(missing))} split")
+
         connectome = load_connectome(ASSET_DIRECTORY / "malecns-sample.parquet")
-        training = load_training_data(arguments.dataset / "train.npz", size=arguments.size)
-        validation = load_training_data(arguments.dataset / "validation.npz", size=arguments.size)
+        training = load_training_data(splits["train"], size=arguments.size)
+        validation = load_training_data(splits["validation"], size=arguments.size)
         policy = ConnectomePolicy.initialize(
             connectome,
             size=arguments.size,

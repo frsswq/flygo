@@ -130,6 +130,7 @@ Publish completed files by atomic replacement and publish the completion manifes
 A directory without a valid completion manifest is incomplete, not reusable evidence.
 For a new multi-file corpus or release, stage a complete version in a sibling directory and publish it only after verification.
 Do not overwrite an older completed version.
+`build-dataset` already enforces this: it refuses an output directory that holds a manifest.
 
 On restart, verify and reuse complete units.
 Discard or restart only incomplete units.

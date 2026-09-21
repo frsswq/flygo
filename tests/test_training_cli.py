@@ -1,3 +1,4 @@
+import hashlib
 import json
 import re
 import subprocess
@@ -17,15 +18,22 @@ def test_cli_checkpoint_inference_uses_the_training_steps(tmp_path: Path) -> Non
     dataset = tmp_path / "dataset"
     dataset.mkdir()
     position = Position.empty(5)
+    files = {}
     for split in ("train", "validation"):
+        path = dataset / f"{split}.npz"
         np.savez(
-            dataset / f"{split}.npz",
+            path,
             features=position.features()[None, :],
             legal=np.ones((1, 26), dtype=np.bool_),
             policy=np.eye(26, dtype=np.float32)[[12]],
             value=np.ones(1, dtype=np.float32),
         )
-    (dataset / "manifest.json").write_text(json.dumps({"fixture": True}))
+        files[split] = {
+            "file": path.name,
+            "examples": 1,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+    (dataset / "manifest.json").write_text(json.dumps({"fixture": True, "files": files}))
     checkpoint = tmp_path / "policy.npz"
     result = subprocess.run(
         [
@@ -80,3 +88,31 @@ def test_cli_checkpoint_inference_uses_the_training_steps(tmp_path: Path) -> Non
     assert fixture["steps"] == 3
     np.testing.assert_allclose(empty_case["logits"], logits, atol=1e-6)
     np.testing.assert_allclose(empty_case["value"], value, atol=1e-6)
+
+
+def test_cli_train_requires_a_published_dataset(tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset"
+    dataset.mkdir()
+    checkpoint = tmp_path / "policy.npz"
+
+    result = subprocess.run(
+        [
+            "uv",
+            "run",
+            "--no-sync",
+            "flygo",
+            "train",
+            "--dataset",
+            str(dataset),
+            "--output",
+            str(checkpoint),
+            "--size",
+            "5",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "not published" in result.stderr
+    assert not checkpoint.exists()

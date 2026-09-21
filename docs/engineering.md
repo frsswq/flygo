@@ -23,6 +23,10 @@ SGF ingestion uses `sgfmill` and validates each main sequence with the FlyGo rul
 Raw SGF, KataGo output, split NPZ files, checkpoints, and tournament reports stay under `data/` and are not deployed.
 The browser receives only versioned inference artifacts under `web/public/flygo/`.
 
+A dataset directory is published only when it holds a manifest.
+`build-dataset` writes the splits first and the manifest last, and it refuses to write into a directory that already has a manifest.
+`published_split_paths` resolves split files through that manifest and verifies their SHA-256 values, so training never reads a partial or edited generation.
+
 ```bash
 uv run flygo export-web --policy data/models/flygo-19.npz
 ```

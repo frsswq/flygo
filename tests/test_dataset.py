@@ -1,14 +1,19 @@
 import json
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
 
+import flygo.dataset as dataset_module
 from flygo.dataset import (
+    SPLITS,
     build_dataset,
     load_sgf_games,
     load_teacher_targets,
     parse_sgf_collection,
+    published_split_paths,
     sample_id,
     split_of,
 )
@@ -36,6 +41,14 @@ def test_sgf_rejects_unsupported_or_unscored_games() -> None:
         parse_sgf_collection(b"(;SZ[9]RE[B+R];B[aa])")
     with pytest.raises(ValueError, match="winner"):
         parse_sgf_collection(b"(;SZ[19]KM[7.5];B[aa])")
+
+
+def test_sgf_rejects_a_point_outside_the_board() -> None:
+    with pytest.raises(ValueError, match="invalid move at node 2"):
+        parse_sgf_collection(b"(;FF[4]GM[1]SZ[5]KM[0]RE[B+R];B[gg])")
+
+    with pytest.raises(ValueError, match="invalid move at node 3"):
+        parse_sgf_collection(b"(;FF[4]GM[1]SZ[5]KM[0]RE[B+R];B[aa];W[zz])")
 
 
 @pytest.mark.parametrize(
@@ -290,3 +303,105 @@ def test_required_teacher_covers_every_sample_before_writing(tmp_path: Path) -> 
     with pytest.raises(ValueError, match="Missing teacher targets"):
         build_dataset([game], tmp_path / "missing", require_teacher=True)
     assert not (tmp_path / "missing").exists()
+
+
+def test_published_split_paths_verify_a_published_dataset(tmp_path: Path) -> None:
+    output = tmp_path / "dataset"
+    build_dataset(parse_sgf_collection(SGF), output)
+
+    paths = published_split_paths(output)
+
+    assert set(paths) == set(SPLITS)
+    assert paths["train"] == output / "train.npz"
+
+
+def test_published_split_paths_reject_an_unpublished_directory(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="not published"):
+        published_split_paths(tmp_path / "missing")
+
+
+def test_published_split_paths_reject_a_damaged_manifest(tmp_path: Path) -> None:
+    output = tmp_path / "dataset"
+    build_dataset(parse_sgf_collection(SGF), output)
+    (output / "manifest.json").write_text("{ not json")
+
+    with pytest.raises(ValueError, match="unreadable manifest"):
+        published_split_paths(output)
+
+
+def test_published_split_paths_reject_a_changed_split(tmp_path: Path) -> None:
+    output = tmp_path / "dataset"
+    build_dataset(parse_sgf_collection(SGF), output)
+    with (output / "train.npz").open("ab") as stream:
+        stream.write(b"changed")
+
+    with pytest.raises(ValueError, match="train split hash does not match"):
+        published_split_paths(output)
+
+
+def test_build_dataset_refuses_to_replace_a_published_generation(tmp_path: Path) -> None:
+    output = tmp_path / "dataset"
+    first = parse_sgf_collection(SGF)[0]
+    second = parse_sgf_collection(SGF.replace(b"RE[B+R]", b"RE[W+R]"))[0]
+    build_dataset([first], output)
+    published = {path.name: path.read_bytes() for path in output.iterdir()}
+    before = published_split_paths(output)
+
+    with pytest.raises(ValueError, match="already published"):
+        build_dataset([second], output)
+
+    assert {path.name: path.read_bytes() for path in output.iterdir()} == published
+    assert published_split_paths(output) == before
+
+
+@pytest.mark.parametrize("fail_at", [0, 1, 2])
+def test_build_dataset_split_failure_publishes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fail_at: int
+) -> None:
+    output = tmp_path / "dataset"
+    game = parse_sgf_collection(SGF)[0]
+    original = dataset_module._write_npz
+    written = 0
+
+    def failing(path: Path, rows: Sequence[tuple[Any, ...]], size: int) -> None:
+        nonlocal written
+        if written == fail_at:
+            raise OSError("injected split write failure")
+        written += 1
+        original(path, rows, size)
+
+    monkeypatch.setattr(dataset_module, "_write_npz", failing)
+    with pytest.raises(OSError, match="injected split write failure"):
+        build_dataset([game], output)
+    monkeypatch.setattr(dataset_module, "_write_npz", original)
+
+    assert not (output / "manifest.json").exists()
+    with pytest.raises(ValueError, match="not published"):
+        published_split_paths(output)
+
+    build_dataset([game], output)
+    clean = tmp_path / "clean"
+    build_dataset([game], clean)
+
+    assert (output / "manifest.json").read_bytes() == (clean / "manifest.json").read_bytes()
+    assert {path.name: path.read_bytes() for path in output.iterdir() if path.is_file()} == {
+        path.name: path.read_bytes() for path in clean.iterdir() if path.is_file()
+    }
+
+
+def test_build_dataset_manifest_failure_publishes_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "dataset"
+    game = parse_sgf_collection(SGF)[0]
+
+    def failing(_output: Path, _manifest: object) -> None:
+        raise OSError("injected manifest failure")
+
+    monkeypatch.setattr(dataset_module, "_write_manifest", failing)
+    with pytest.raises(OSError, match="injected manifest failure"):
+        build_dataset([game], output)
+
+    assert not (output / "manifest.json").exists()
+    with pytest.raises(ValueError, match="not published"):
+        published_split_paths(output)

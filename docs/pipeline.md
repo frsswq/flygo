@@ -79,6 +79,11 @@ FlyGo assigns complete games to deterministic 80/10/10 train, validation, and te
 No position from one game can enter another split.
 Each NPZ split contains board features, legal-action masks, policy targets, value targets, sample IDs, and target-source markers.
 The manifest records hashes, counts, rules, split logic, and teacher provenance.
+The manifest is also the publication record.
+An output directory that already has a manifest is refused, so a published generation is never replaced in place.
+Build a new generation in a separate directory, verify it, then use that directory.
+A failure while writing the splits leaves the directory unpublished, and a retry into the same directory completes it.
+`train` resolves its splits through the manifest and verifies their hashes, so it never reads an unpublished or edited dataset.
 
 A teacher target replaces the human move and game-result value for that position.
 With `--require-teacher`, missing labels stop the build before it writes any files.

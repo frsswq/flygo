@@ -19,6 +19,7 @@ from flygo.go import BOARD_SIZES, RULESET, Position, komi_for
 
 DATASET_VERSION = 1
 SPLITS = ("train", "validation", "test")
+MANIFEST_FILE = "manifest.json"
 
 
 @dataclass(frozen=True)
@@ -84,7 +85,12 @@ def parse_sgf_collection(payload: bytes) -> tuple[GameRecord, ...]:
                     f"Game {index} uses setup stones at node {node_number}; "
                     "FlyGo replays move-only main lines"
                 )
-            colour, move = node.get_move()
+            try:
+                colour, move = node.get_move()
+            except ValueError as error:
+                raise ValueError(
+                    f"Game {index} has an invalid move at node {node_number}"
+                ) from error
             if colour is None:
                 continue
             expected = "b" if position.to_play == 1 else "w"
@@ -124,6 +130,38 @@ def split_of(game_id: str) -> str:
 
 def sample_id(game_id: str, move_number: int) -> str:
     return f"{game_id}:{move_number}"
+
+
+def published_split_paths(dataset: Path) -> dict[str, Path]:
+    """Resolve a published dataset's split files and verify them against its manifest.
+
+    The manifest is the publication record.
+    A dataset directory without one is an incomplete build, not readable evidence.
+    """
+    manifest_path = dataset / MANIFEST_FILE
+    if not manifest_path.is_file():
+        raise ValueError(f"Dataset {dataset} has no manifest and is not published")
+    try:
+        manifest = json.loads(manifest_path.read_text())
+    except (OSError, ValueError) as error:
+        raise ValueError(f"Dataset {dataset} has an unreadable manifest") from error
+    files = manifest.get("files")
+    if not isinstance(files, dict) or not files:
+        raise ValueError(f"Dataset {dataset} manifest has no split files")
+    paths: dict[str, Path] = {}
+    for split, entry in files.items():
+        try:
+            name = entry["file"]
+            expected = entry["sha256"]
+        except (KeyError, TypeError) as error:
+            raise ValueError(f"Dataset {dataset} has an invalid {split} split entry") from error
+        path = dataset / name
+        if not path.is_file():
+            raise ValueError(f"Dataset {dataset} {split} split file is missing")
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise ValueError(f"Dataset {dataset} {split} split hash does not match the manifest")
+        paths[split] = path
+    return paths
 
 
 def load_teacher_targets(path: Path | None) -> dict[str, TeacherTarget]:
@@ -257,6 +295,11 @@ def build_dataset(
         missing = expected - teacher.keys()
         if missing:
             raise ValueError(f"Missing teacher targets for {len(missing)} sampled positions")
+    if (output / MANIFEST_FILE).exists():
+        raise ValueError(
+            f"Dataset {output} is already published; a published generation is never replaced. "
+            "Build the new generation in a separate directory"
+        )
     split_rows: dict[str, list[tuple[Any, ...]]] = {name: [] for name in SPLITS}
     seen_positions: set[bytes] = set()
     accepted = 0
@@ -305,13 +348,22 @@ def build_dataset(
         ),
         "files": files,
     }
-    manifest_path = output / "manifest.json"
-    temporary_manifest = output / ".manifest.json.tmp"
-    temporary_manifest.write_text(json.dumps(manifest, indent=2) + "\n")
-    temporary_manifest.replace(manifest_path)
+    _write_manifest(output, manifest)
     return DatasetSummary(
         accepted,
         duplicates,
         sum(len(rows) for rows in split_rows.values()),
         rejected,
     )
+
+
+def _write_manifest(output: Path, manifest: Mapping[str, Any]) -> None:
+    """Publish the manifest, which is the single commit point for a generation."""
+    descriptor, temporary_name = tempfile.mkstemp(dir=output, prefix=f".{MANIFEST_FILE}.")
+    try:
+        with os.fdopen(descriptor, "w") as temporary:
+            temporary.write(json.dumps(manifest, indent=2) + "\n")
+        os.replace(temporary_name, output / MANIFEST_FILE)
+    except BaseException:
+        Path(temporary_name).unlink(missing_ok=True)
+        raise
