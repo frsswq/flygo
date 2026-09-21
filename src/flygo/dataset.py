@@ -217,7 +217,8 @@ def _examples(
             policy = np.zeros(position.points + 1, dtype=np.float32)
             target = teacher.get(identifier)
             source = 0
-            value = float(game.winner * position.to_play)
+            # Both factors are +/-1, so the product is an exact integer.
+            value: float = game.winner * position.to_play
             if target is None:
                 policy[action] = 1
             else:
