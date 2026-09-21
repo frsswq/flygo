@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -13,6 +11,7 @@ from typing import Any
 import numpy as np
 from numpy.typing import NDArray
 
+from flygo.atomic import write_bytes
 from flygo.connectome import FrozenConnectome
 from flygo.go import BOARD_SIZES
 from flygo.model import (
@@ -395,23 +394,18 @@ def save_policy(
         "size": policy.size,
         **architecture,
     }
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
-    try:
-        with os.fdopen(descriptor, "wb") as temporary:
-            np.savez_compressed(
-                temporary,
-                encoder=(
-                    np.empty((0, 0), dtype=np.float32) if policy.encoder is None else policy.encoder
-                ),
-                readout=policy.readout,
-                value_readout=policy.value_readout,
-                metadata=np.asarray(json.dumps(payload)),
-            )
-        os.replace(temporary_name, path)
-    except BaseException:
-        Path(temporary_name).unlink(missing_ok=True)
-        raise
+    write_bytes(
+        path,
+        lambda temporary: np.savez_compressed(
+            temporary,
+            encoder=(
+                np.empty((0, 0), dtype=np.float32) if policy.encoder is None else policy.encoder
+            ),
+            readout=policy.readout,
+            value_readout=policy.value_readout,
+            metadata=np.asarray(json.dumps(payload)),
+        ),
+    )
 
 
 def load_policy(

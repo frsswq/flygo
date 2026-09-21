@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
-import tempfile
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -15,6 +13,7 @@ import numpy as np
 from numpy.typing import NDArray
 from sgfmill import sgf, sgf_grammar
 
+from flygo.atomic import write_bytes, write_text
 from flygo.go import BOARD_SIZES, RULESET, Position, komi_for
 
 DATASET_VERSION = 1
@@ -256,15 +255,7 @@ def _write_npz(path: Path, rows: Sequence[tuple[Any, ...]], size: int) -> None:
             "value": np.empty(0, dtype=np.float32),
             "source": np.empty(0, dtype=np.uint8),
         }
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
-    try:
-        with os.fdopen(descriptor, "wb") as temporary:
-            np.savez_compressed(temporary, **arrays)
-        os.replace(temporary_name, path)
-    except BaseException:
-        Path(temporary_name).unlink(missing_ok=True)
-        raise
+    write_bytes(path, lambda temporary: np.savez_compressed(temporary, **arrays))
 
 
 def build_dataset(
@@ -359,11 +350,7 @@ def build_dataset(
 
 def _write_manifest(output: Path, manifest: Mapping[str, Any]) -> None:
     """Publish the manifest, which is the single commit point for a generation."""
-    descriptor, temporary_name = tempfile.mkstemp(dir=output, prefix=f".{MANIFEST_FILE}.")
-    try:
-        with os.fdopen(descriptor, "w") as temporary:
-            temporary.write(json.dumps(manifest, indent=2) + "\n")
-        os.replace(temporary_name, output / MANIFEST_FILE)
-    except BaseException:
-        Path(temporary_name).unlink(missing_ok=True)
-        raise
+    write_text(
+        output / MANIFEST_FILE,
+        lambda temporary: temporary.write(json.dumps(manifest, indent=2) + "\n"),
+    )

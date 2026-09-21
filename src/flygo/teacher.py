@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
+from flygo.atomic import write_text
 from flygo.dataset import GameRecord, sample_id
 from flygo.go import komi_for
 
@@ -141,14 +140,10 @@ def import_katago_analysis(
         raise ValueError(
             f"KataGo analysis has only provisional responses ({provisional}); no search finished"
         )
-    output.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(dir=output.parent, prefix=f".{output.name}.")
-    try:
-        with os.fdopen(descriptor, "w") as temporary:
-            for identifier in sorted(targets):
-                temporary.write(json.dumps(targets[identifier]) + "\n")
-        os.replace(temporary_name, output)
-    except BaseException:
-        Path(temporary_name).unlink(missing_ok=True)
-        raise
+
+    def write_targets(temporary: TextIO) -> None:
+        for identifier in sorted(targets):
+            temporary.write(json.dumps(targets[identifier]) + "\n")
+
+    write_text(output, write_targets)
     return len(targets)

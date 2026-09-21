@@ -8,16 +8,16 @@ import json
 import math
 import os
 import platform
-import tempfile
 import time
 import tracemalloc
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TextIO
 
 import numpy as np
 from pydantic import BaseModel, Field, TypeAdapter
 
+from flygo.atomic import write_text
 from flygo.connectome import FrozenConnectome, load_connectome
 from flygo.go import BOARD_SIZES, RULESET
 from flygo.model import (
@@ -127,15 +127,11 @@ class RunResult:
 
 
 def _write_json(path: Path, value: Any) -> None:
-    descriptor, name = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
-    try:
-        with os.fdopen(descriptor, "w") as stream:
-            json.dump(value, stream, indent=2, sort_keys=True, allow_nan=False)
-            stream.write("\n")
-        os.replace(name, path)
-    except BaseException:
-        Path(name).unlink(missing_ok=True)
-        raise
+    def dump(stream: TextIO) -> None:
+        json.dump(value, stream, indent=2, sort_keys=True, allow_nan=False)
+        stream.write("\n")
+
+    write_text(path, dump)
 
 
 def _load_splits(dataset: Path, config: ResearchConfig) -> dict[str, TrainingData]:
