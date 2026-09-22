@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -38,6 +39,7 @@ class CorpusProtocol(StrictModel):
     teacher_network: Artifact
     teacher_executable: Artifact
     teacher_configuration: Artifact
+    pilot_queries: Artifact
     output: PlannedArtifact
     timed_batch_positions: int = Field(ge=50, le=500)
     timed_batch_report: PlannedArtifact
@@ -90,6 +92,95 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def timing_queries(source: Path, target_positions: int) -> list[dict[str, Any]]:
+    """Select exactly ``target_positions`` from pinned queries in file order."""
+    if target_positions < 1:
+        raise ValueError("Timing target must be positive")
+    selected: list[dict[str, Any]] = []
+    remaining = target_positions
+    seen: set[tuple[str, int]] = set()
+    for line_number, line in enumerate(source.read_text().splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+            identifier = str(row["id"])
+            turns = row["analyzeTurns"]
+            visits = int(row["maxVisits"])
+            if (
+                not isinstance(turns, list)
+                or not turns
+                or any(not isinstance(turn, int) or turn < 0 for turn in turns)
+            ):
+                raise ValueError
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            raise ValueError(f"Invalid timing source query on line {line_number}") from error
+        chosen = turns[:remaining]
+        if any((identifier, turn) in seen for turn in chosen):
+            raise ValueError("Timing source contains duplicate requested positions")
+        seen.update((identifier, turn) for turn in chosen)
+        selected.append({**row, "analyzeTurns": chosen, "maxVisits": visits})
+        remaining -= len(chosen)
+        if remaining == 0:
+            return selected
+    raise ValueError(
+        f"Timing source has only {target_positions - remaining} of {target_positions} positions"
+    )
+
+
+def verify_timing_analysis(
+    analysis: Path,
+    queries: list[dict[str, Any]],
+    *,
+    visits: int,
+) -> int:
+    """Require one final response at the fixed visit budget for each position."""
+    expected: set[tuple[str, int]] = set()
+    for query in queries:
+        try:
+            identifier = str(query["id"])
+            turns = query["analyzeTurns"]
+            if not isinstance(turns, list):
+                raise ValueError
+            expected.update((identifier, int(turn)) for turn in turns)
+        except (KeyError, TypeError, ValueError) as error:
+            raise ValueError("Invalid query passed to timing verification") from error
+    completed: set[tuple[str, int]] = set()
+    for line_number, line in enumerate(analysis.read_text().splitlines(), 1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+            key = (str(row["id"]), int(row["turnNumber"]))
+            during_search = row.get("isDuringSearch", False)
+            actual_visits = int(row["rootInfo"]["visits"])
+            move_infos = row["moveInfos"]
+            if (
+                not isinstance(during_search, bool)
+                or not isinstance(move_infos, list)
+                or not move_infos
+            ):
+                raise ValueError
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as error:
+            raise ValueError(f"Invalid timing response on line {line_number}") from error
+        if during_search:
+            raise ValueError(f"Timing response is unfinished on line {line_number}")
+        if actual_visits != visits:
+            raise ValueError(
+                f"Timing response visit mismatch on line {line_number}: "
+                f"expected {visits}, got {actual_visits}"
+            )
+        if key not in expected:
+            raise ValueError(f"Unexpected timing response on line {line_number}: {key}")
+        if key in completed:
+            raise ValueError(f"Duplicate timing response on line {line_number}: {key}")
+        completed.add(key)
+    missing = expected - completed
+    if missing:
+        raise ValueError(f"Timing analysis is missing {len(missing)} final responses")
+    return len(completed)
+
+
 def _verify_artifact(name: str, artifact: Artifact, blockers: list[str]) -> None:
     if not artifact.path.is_file():
         blockers.append(f"missing {name}: {artifact.path}")
@@ -127,6 +218,7 @@ def validate_protocol(protocol: FeasibilityProtocol) -> list[str]:
         "teacher network": protocol.corpus.teacher_network,
         "teacher executable": protocol.corpus.teacher_executable,
         "teacher configuration": protocol.corpus.teacher_configuration,
+        "pilot queries": protocol.corpus.pilot_queries,
         "source graph": protocol.circuit.source_graph,
     }
     for name, artifact in artifacts.items():

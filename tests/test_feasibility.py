@@ -6,7 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from flygo.feasibility import FeasibilityProtocol, dry_run, validate_protocol
+from flygo.feasibility import (
+    FeasibilityProtocol,
+    dry_run,
+    timing_queries,
+    validate_protocol,
+    verify_timing_analysis,
+)
 from flygo.research import MODELS
 
 
@@ -34,6 +40,7 @@ def protocol_payload(tmp_path: Path) -> dict[str, object]:
             "teacher_network": pinned,
             "teacher_executable": pinned,
             "teacher_configuration": pinned,
+            "pilot_queries": pinned,
             "output": {"path": str(tmp_path / "dataset.json"), "sha256": None},
             "timed_batch_positions": 100,
             "timed_batch_report": {"path": str(tmp_path / "timing.json"), "sha256": None},
@@ -119,3 +126,134 @@ def test_committed_feasibility_protocol_has_a_non_executing_dry_run() -> None:
     assert result["status"] == "blocked"
     assert result["training"]["cell_count"] == 18
     assert result["training"]["final_test"] is False
+
+
+def test_timing_queries_and_analysis_require_exact_final_coverage(tmp_path: Path) -> None:
+    source = tmp_path / "source.jsonl"
+    source.write_text(
+        json.dumps({"id": "game", "analyzeTurns": [0, 1, 2], "maxVisits": 256}) + "\n"
+    )
+    queries = timing_queries(source, 2)
+    assert queries[0]["analyzeTurns"] == [0, 1]
+
+    analysis = tmp_path / "analysis.jsonl"
+    responses = [
+        {
+            "id": "game",
+            "turnNumber": turn,
+            "isDuringSearch": False,
+            "rootInfo": {"visits": 256},
+            "moveInfos": [{"move": "pass", "visits": 256}],
+        }
+        for turn in (0, 1)
+    ]
+    analysis.write_text("".join(json.dumps(response) + "\n" for response in responses))
+    assert verify_timing_analysis(analysis, queries, visits=256) == 2
+
+    responses[1]["isDuringSearch"] = True
+    analysis.write_text("".join(json.dumps(response) + "\n" for response in responses))
+    with pytest.raises(ValueError, match="unfinished"):
+        verify_timing_analysis(analysis, queries, visits=256)
+
+
+def test_teacher_timing_command_publishes_and_reuses_verified_report(tmp_path: Path) -> None:
+    source = tmp_path / "source.jsonl"
+    source.write_text(
+        json.dumps(
+            {
+                "id": "game",
+                "moves": [],
+                "rules": "tromp-taylor",
+                "komi": 7.5,
+                "boardXSize": 19,
+                "boardYSize": 19,
+                "analyzeTurns": list(range(100)),
+                "maxVisits": 256,
+                "includePolicy": True,
+            }
+        )
+        + "\n"
+    )
+    count = tmp_path / "engine-count"
+    engine = tmp_path / "fake-engine"
+    engine.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json, pathlib, sys\n"
+        f"count = pathlib.Path({str(count)!r})\n"
+        "count.write_text(str(int(count.read_text()) + 1) if count.exists() else '1')\n"
+        "for line in sys.stdin:\n"
+        "    query = json.loads(line)\n"
+        "    for turn in query['analyzeTurns']:\n"
+        "        print(json.dumps({'id': query['id'], 'turnNumber': turn, "
+        "'isDuringSearch': False, 'rootInfo': {'visits': query['maxVisits']}, "
+        "'moveInfos': [{'move': 'pass', 'visits': query['maxVisits']}]}))\n"
+    )
+    engine.chmod(0o755)
+    payload = protocol_payload(tmp_path)
+    corpus = payload["corpus"]
+    corpus["pilot_queries"] = artifact(source)  # type: ignore[index]
+    corpus["teacher_executable"] = artifact(engine)  # type: ignore[index]
+    report_path = tmp_path / "timing" / "timing.json"
+    corpus["timed_batch_report"] = {  # type: ignore[index]
+        "path": str(report_path),
+        "sha256": None,
+    }
+    protocol_path = tmp_path / "protocol.json"
+    protocol_path.write_text(json.dumps(payload))
+    command = [
+        sys.executable,
+        "scripts/measure_teacher_feasibility.py",
+        "--protocol",
+        str(protocol_path),
+        "--timeout",
+        "10",
+    ]
+
+    first = subprocess.run(command, capture_output=True, text=True)
+    second = subprocess.run(command, capture_output=True, text=True)
+
+    assert first.returncode == 0, first.stderr
+    assert second.returncode == 0, second.stderr
+    assert count.read_text() == "1"
+    report = json.loads(report_path.read_text())
+    assert report["positions"] == 100
+    assert report["visits_per_position"] == 256
+    assert report["projection"]["positions"] == 10_000
+
+
+def test_failed_teacher_timing_does_not_publish_report(tmp_path: Path) -> None:
+    source = tmp_path / "source.jsonl"
+    source.write_text(
+        json.dumps({"id": "game", "analyzeTurns": list(range(100)), "maxVisits": 256}) + "\n"
+    )
+    engine = tmp_path / "failed-engine"
+    engine.write_text("#!/bin/sh\nexit 2\n")
+    engine.chmod(0o755)
+    payload = protocol_payload(tmp_path)
+    corpus = payload["corpus"]
+    corpus["pilot_queries"] = artifact(source)  # type: ignore[index]
+    corpus["teacher_executable"] = artifact(engine)  # type: ignore[index]
+    report_path = tmp_path / "timing" / "timing.json"
+    corpus["timed_batch_report"] = {  # type: ignore[index]
+        "path": str(report_path),
+        "sha256": None,
+    }
+    protocol_path = tmp_path / "protocol.json"
+    protocol_path.write_text(json.dumps(payload))
+
+    run = subprocess.run(
+        [
+            sys.executable,
+            "scripts/measure_teacher_feasibility.py",
+            "--protocol",
+            str(protocol_path),
+            "--timeout",
+            "10",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    assert run.returncode != 0
+    assert "status 2" in run.stderr
+    assert not report_path.exists()

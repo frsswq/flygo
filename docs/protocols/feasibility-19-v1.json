@@ -29,6 +29,10 @@
       "path": "docs/teacher-pilot/analysis.cfg",
       "sha256": "89fc12a11c2ab1474584f63b581a7a10532e6a0a04b1da5b97da470828541cab"
     },
+    "pilot_queries": {
+      "path": "data/raw/teacher-pilot/queries.jsonl",
+      "sha256": "299afc60af0a1a427ee9ade583c39665e924a55430a034b23836e0d8abf2e102"
+    },
     "output": {
       "path": "data/datasets/teacher-feasibility-19-v1/manifest.json",
       "sha256": null
@@ -36,7 +40,7 @@
     "timed_batch_positions": 100,
     "timed_batch_report": {
       "path": "data/raw/teacher-feasibility-19-v1/timing.json",
-      "sha256": null
+      "sha256": "40f1d63a868cbbb8cb6c1a55c3b99e4cb9b2d0085637da7c14fd16db8a8e6485"
     }
   },
   "circuit": {
