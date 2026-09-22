@@ -16,11 +16,12 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, BinaryIO
 
+import numpy as np
 from measure_teacher_feasibility import engine_command
 from pydantic import ValidationError
 
-from flygo.atomic import write_text
-from flygo.dataset import parse_sgf_collection, split_of
+from flygo.atomic import write_bytes, write_text
+from flygo.dataset import SPLITS, build_dataset, load_sgf_games, parse_sgf_collection, split_of
 from flygo.feasibility import (
     FeasibilityProtocol,
     FeasibilitySources,
@@ -28,7 +29,8 @@ from flygo.feasibility import (
     validate_protocol,
     verify_timing_analysis,
 )
-from flygo.teacher import katago_queries
+from flygo.teacher import import_katago_analysis, katago_queries
+from flygo.training import load_training_data
 
 
 def _json_bytes(value: object) -> bytes:
@@ -343,6 +345,105 @@ def status(protocol: FeasibilityProtocol) -> dict[str, Any]:
     }
 
 
+def _verify_dataset(dataset: Path) -> dict[str, Any]:
+    manifest = _load_json(dataset / "manifest.json")
+    require_teacher = manifest.get("require_teacher")
+    if manifest.get("size") != 19 or not isinstance(require_teacher, bool) or not require_teacher:
+        raise ValueError("Feasibility dataset has the wrong identity")
+    positions: set[bytes] = set()
+    split_examples: dict[str, int] = {}
+    for split in SPLITS:
+        entry = manifest["files"][split]
+        path = dataset / entry["file"]
+        if file_sha256(path) != entry["sha256"]:
+            raise ValueError(f"Feasibility dataset split is damaged: {path}")
+        data = load_training_data(path, size=19)
+        if len(data.features) == 0:
+            raise ValueError(f"Feasibility dataset has an empty {split} split")
+        if set(data.features[:, -1].tolist()) != {-1.0, 1.0}:
+            raise ValueError(f"Feasibility dataset {split} must contain both players")
+        if not (
+            np.isfinite(data.features).all()
+            and np.isfinite(data.policy).all()
+            and np.isfinite(data.value).all()
+            and np.allclose(data.policy.sum(axis=1), 1.0)
+            and np.all(data.policy[~data.legal] == 0)
+            and np.all((data.value >= -1) & (data.value <= 1))
+        ):
+            raise ValueError(f"Feasibility dataset {split} has invalid teacher arrays")
+        for features in data.features:
+            key = features.tobytes()
+            if key in positions:
+                raise ValueError("Duplicate feature row across feasibility dataset splits")
+            positions.add(key)
+        split_examples[split] = len(data.features)
+    return {
+        "examples": len(positions),
+        "split_examples": split_examples,
+        "manifest_sha256": file_sha256(dataset / "manifest.json"),
+        "files": manifest["files"],
+    }
+
+
+def finalize(protocol: FeasibilityProtocol) -> dict[str, Any]:
+    progress = status(protocol)
+    if progress["remaining_shards"] != 0:
+        raise ValueError(
+            f"Cannot finalize: {progress['remaining_shards']} teacher shards remain incomplete"
+        )
+    output = protocol.corpus.output.path.parent
+    if output.exists():
+        verification = _verify_dataset(output)
+        return {"status": "reused", "dataset": str(output), **verification}
+
+    root = protocol.corpus.work_directory
+    selection, shards = _verify_prepared(protocol)
+    analysis_path = root / "analysis.jsonl"
+    analysis_bytes = b"".join((shard / "analysis.jsonl").read_bytes() for shard in shards)
+    if not analysis_bytes.endswith(b"\n"):
+        raise ValueError("Merged feasibility analysis must end with a newline")
+    write_bytes(analysis_path, lambda stream: stream.write(analysis_bytes))
+    sgf_paths = [root / game["sgf_file"] for game in selection["games"]]
+    games = load_sgf_games(sgf_paths)
+    targets_path = root / "targets.jsonl"
+    target_count = import_katago_analysis(analysis_path, targets_path, games)
+    if target_count != selection["requested_positions"]:
+        raise ValueError("Imported target count differs from the prepared corpus")
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    stage = Path(tempfile.mkdtemp(dir=output.parent, prefix=f".{output.name}."))
+    report: dict[str, Any]
+    try:
+        dataset = stage / "dataset"
+        summary = build_dataset(
+            games,
+            dataset,
+            size=protocol.corpus.board_size,
+            stride=protocol.corpus.stride,
+            teacher_path=targets_path,
+            require_teacher=True,
+        )
+        verification = _verify_dataset(dataset)
+        report = {
+            "schema_version": 1,
+            "protocol": protocol.name,
+            "source_revision": protocol.source_revision,
+            "games": len(games),
+            "teacher_targets": target_count,
+            "examples": summary.examples,
+            "duplicates_removed": summary.duplicate_examples,
+            "selection_sha256": file_sha256(root / "selection.json"),
+            "analysis_sha256": file_sha256(analysis_path),
+            "targets_sha256": file_sha256(targets_path),
+            **verification,
+        }
+        _write(dataset / "verification.json", report)
+        dataset.replace(output)
+    finally:
+        shutil.rmtree(stage, ignore_errors=True)
+    return {"status": "published", "dataset": str(output), **report}
+
+
 def _run_process(
     command: list[str],
     query_path: Path,
@@ -438,7 +539,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "command",
-        choices=("prepare", "run", "status"),
+        choices=("prepare", "run", "status", "finalize"),
     )
     parser.add_argument(
         "--protocol",
@@ -463,8 +564,10 @@ def main() -> None:
                     max_shards=arguments.max_shards,
                     timeout=arguments.timeout,
                 )
-            else:
+            elif arguments.command == "status":
                 result = status(protocol)
+            else:
+                result = finalize(protocol)
     except (
         KeyError,
         OSError,

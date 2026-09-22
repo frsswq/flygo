@@ -53,7 +53,7 @@
     },
     "output": {
       "path": "data/processed/circuits-feasibility-v1/circuit-500.parquet",
-      "sha256": null
+      "sha256": "bf50ce0d323d96fe68b37b41326683ed7014e3d99d45607442d770cb222260d2"
     }
   },
   "training": {

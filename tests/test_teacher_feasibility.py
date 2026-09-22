@@ -110,7 +110,10 @@ def fixture_protocol(tmp_path: Path) -> tuple[Path, Path, Path]:
             "teacher_executable": artifact(engine),
             "teacher_configuration": artifact(configuration),
             "pilot_queries": artifact(pilot_queries),
-            "output": {"path": str(tmp_path / "dataset.json"), "sha256": None},
+            "output": {
+                "path": str(tmp_path / "dataset" / "manifest.json"),
+                "sha256": None,
+            },
             "work_directory": str(work),
             "games_per_shard": 1,
             "timed_batch_positions": 100,
@@ -164,11 +167,14 @@ def test_teacher_corpus_prepares_and_resumes_one_verified_shard(tmp_path: Path) 
 
     prepared = command(protocol, "prepare")
     reused = command(protocol, "prepare")
+    blocked_finalize = command(protocol, "finalize")
     first = command(protocol, "run", "--max-shards", "1", "--timeout", "10")
     second = command(protocol, "run", "--max-shards", "1", "--timeout", "10")
 
     assert prepared.returncode == 0, prepared.stderr
     assert reused.returncode == 0, reused.stderr
+    assert blocked_finalize.returncode != 0
+    assert "teacher shards remain incomplete" in blocked_finalize.stderr
     assert json.loads(prepared.stdout)["positions"] == 10_000
     assert json.loads(reused.stdout)["status"] == "reused"
     assert first.returncode == 0, first.stderr

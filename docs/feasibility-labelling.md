@@ -43,3 +43,18 @@ It selected 26 training games, two validation games, and three closed-test games
 
 Do not use the test split for feasibility model selection.
 Dataset construction and matched training remain blocked until all shards complete and the corpus verifier passes.
+
+## Finalize the dataset
+
+After status reports no remaining shards, run:
+
+```bash
+make label-finalize
+```
+
+This command refuses incomplete or damaged shards.
+It merges verified raw answers, imports teacher targets, builds the dataset in a staging directory, verifies every split, and publishes the directory atomically.
+It does not evaluate any model or read test targets for model selection.
+
+The fixed 500-neuron circuit is already selected at `data/processed/circuits-feasibility-v1/circuit-500.parquet`.
+Its SHA-256 is `bf50ce0d323d96fe68b37b41326683ed7014e3d99d45607442d770cb222260d2`.
