@@ -1,0 +1,578 @@
+{
+  "schema_version": 1,
+  "selection": "Ten fixed b18 training releases in listed order; every tenth game link from each captured training-games page, in page order",
+  "pages": [
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s6476684544-d3393539279/training-games/",
+      "sha256": "84cb6e4d94c40ce6c73ec3d1221a68640d4676df4dea617c92401e6395f8509f",
+      "sampled_game_ids": [
+        "42243489",
+        "42114521",
+        "42110783",
+        "42105062",
+        "42100043",
+        "42097089",
+        "42094796",
+        "42092223",
+        "42088434",
+        "42085808"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s6706197504-d3452137032/training-games/",
+      "sha256": "83945bbd58fa059633671a7ba4e3b94212fe5ba059de24bdabbfc6aebfdf0377",
+      "sampled_game_ids": [
+        "43285037",
+        "43242987",
+        "43227194",
+        "43222740",
+        "43220872",
+        "43218339",
+        "43215667",
+        "43212917",
+        "43209699",
+        "43208296"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s6890580736-d3500282628/training-games/",
+      "sha256": "cae9cdcfb2d5cc8e7788b3f151740e646bf4b806fced1f61dbf420cf4618fd4f",
+      "sampled_game_ids": [
+        "44523633",
+        "44218311",
+        "44211498",
+        "44204902",
+        "44200070",
+        "44199085",
+        "44197749",
+        "44196540",
+        "44194909",
+        "44193329"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s6981484800-d3524616345/training-games/",
+      "sha256": "963550b716d96270a16708c3f99bbaa0254db58c944d5cc1983baa76459c4611",
+      "sampled_game_ids": [
+        "44893601",
+        "44767428",
+        "44704175",
+        "44671109",
+        "44669328",
+        "44668661",
+        "44667380",
+        "44666876",
+        "44666200",
+        "44665395"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s7131841024-d3563447968/training-games/",
+      "sha256": "0b7099e13dcc7eca7f1c158fe9620c23425c7d378cfde93d84aa8efcb2c26e2c",
+      "sampled_game_ids": [
+        "45585236",
+        "45472968",
+        "45472956",
+        "45465700",
+        "45460563",
+        "45459316",
+        "45458873",
+        "45458289",
+        "45457810",
+        "45457257"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s7161915648-d3571334277/training-games/",
+      "sha256": "db8f61f50358c4fc2a5f34d5bdb95281a0cd8ba9f118ca33379c9ef667d36d70",
+      "sampled_game_ids": [
+        "45791617",
+        "45660477",
+        "45656876",
+        "45654874",
+        "45645806",
+        "45642884",
+        "45642032",
+        "45639767",
+        "45636617",
+        "45634445"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s7560105728-d3675868361/training-games/",
+      "sha256": "a655c20f8105afd942554c344b9d9d5eb6f1bcac1a236baaa358c52142c71bd1",
+      "sampled_game_ids": [
+        "47886796",
+        "47807244",
+        "47796124",
+        "47776602",
+        "47772628",
+        "47771578",
+        "47769835",
+        "47769368",
+        "47769009",
+        "47768841"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s7860356864-d3754557269/training-games/",
+      "sha256": "6535640211d60753ff3f6904d1a3246deb8657f2ed9ab068061e2d6023d32bee",
+      "sampled_game_ids": [
+        "49567204",
+        "49411649",
+        "49407784",
+        "49404760",
+        "49403239",
+        "49402355",
+        "49401893",
+        "49401465",
+        "49401239",
+        "49400993"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s8160926464-d3833541428/training-games/",
+      "sha256": "cb881ef1b40871a714d95ce475a9d509d22941a59cd170eb45fb0a09adb5ed27",
+      "sampled_game_ids": [
+        "51574815",
+        "51156485",
+        "51062691",
+        "51053521",
+        "51047633",
+        "51046939",
+        "51045607",
+        "51045586",
+        "51044920",
+        "51044148"
+      ]
+    },
+    {
+      "url": "https://katagotraining.org/networks/kata1/kata1-b18c384nbt-s8768585216-d3995752096/training-games/",
+      "sha256": "e913931b60aed4bb1757dd1b83b17c6fb4e8163f42d12e9ba39fdb9a8db4e974",
+      "sampled_game_ids": [
+        "54800505",
+        "54433200",
+        "54428338",
+        "54425616",
+        "54424964",
+        "54424723",
+        "54424443",
+        "54424227",
+        "54423964",
+        "54423548"
+      ]
+    }
+  ],
+  "archives": [
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-11/82E7518AEFFAF17A01BA0F11D02B7E91.tgz",
+      "file": "archives/82E7518AEFFAF17A01BA0F11D02B7E91.tgz",
+      "sha256": "e8534abe3262f14ec290bee657a7723541720dca9c7a0fc9f4cad31a34a8763c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-10/B53E9D6BC6452E718E1C21A27D866FB8.tgz",
+      "file": "archives/B53E9D6BC6452E718E1C21A27D866FB8.tgz",
+      "sha256": "5fa35597271442b09fe6b92d24fd4ff2779a72eb39282102fc8e2bba99775605"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-10/0525D49BF7F892A9892A4CB1B0A38464.tgz",
+      "file": "archives/0525D49BF7F892A9892A4CB1B0A38464.tgz",
+      "sha256": "5c2f3048115137d6233c4762906b621aabb73ec91051f1ac6855257465aee070"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/93927DA9EA733B58A97430C7F630E0AD.tgz",
+      "file": "archives/93927DA9EA733B58A97430C7F630E0AD.tgz",
+      "sha256": "f642ba4a44483373d6ec2e966b8ea5fc9f4fc1be545e287985be858b5b23f842"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/9D1F1ED2535922915E332B06BD5D8D40.tgz",
+      "file": "archives/9D1F1ED2535922915E332B06BD5D8D40.tgz",
+      "sha256": "f15a8cdea165340f57a32c348aca1a104ff31b7a56c2c933d3e281f04f0ae54f"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/BC1375103E335DB27E838824F3D5712A.tgz",
+      "file": "archives/BC1375103E335DB27E838824F3D5712A.tgz",
+      "sha256": "92844eb811a935ad03468172e8d7b7543cfe5150aa0809baab3dbf32fab64734"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/EF0125C72C73FA7683BC28918E6E7F3E.tgz",
+      "file": "archives/EF0125C72C73FA7683BC28918E6E7F3E.tgz",
+      "sha256": "5cb87419eb71092419af261a766b14268fa9bcddf30fd7c80055707fd9a7cd81"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/559AE0DE0CB8F48E500E7B4AEAA5A756.tgz",
+      "file": "archives/559AE0DE0CB8F48E500E7B4AEAA5A756.tgz",
+      "sha256": "bfb4e3757a5b1f4af3d2271d927b564167227d712eac828d4b1cd2f587eeb23f"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6476684544-d3393539279/2023-06-09/BCC3CAE489DEEFAF1289C8E94F81625F.tgz",
+      "file": "archives/BCC3CAE489DEEFAF1289C8E94F81625F.tgz",
+      "sha256": "6a8366097628eed263c11e066e3118a93df4a69b60b000604ae57832d7c66dca"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/6A91FC0C2985A4F3B973849CCB10F236.tgz",
+      "file": "archives/6A91FC0C2985A4F3B973849CCB10F236.tgz",
+      "sha256": "b2959323f6788a3110cb3b511f4412f969afbdc884661c57a1ebdc3f30fb8a8d"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/06C8156039622629490B8F0BF18D8058.tgz",
+      "file": "archives/06C8156039622629490B8F0BF18D8058.tgz",
+      "sha256": "7532d636fdad728ce4fdc636d843807f95c93bb3e0a41dd3a02422619003fe39"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/44D717383C622E133E642808D8AF36D0.tgz",
+      "file": "archives/44D717383C622E133E642808D8AF36D0.tgz",
+      "sha256": "91bee6e00a1ebd6168721734611f2e28e1d59647609a69700cb9456a021555c6"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/07098BA493FCEB4AB1FCF1DADD7CAB09.tgz",
+      "file": "archives/07098BA493FCEB4AB1FCF1DADD7CAB09.tgz",
+      "sha256": "a33a9607e0979f574c6d81a73a8085c53abcb87b4bd31a12d61bf64c9bb4438b"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/13536082E50A0090039834E8B0AF2FD9.tgz",
+      "file": "archives/13536082E50A0090039834E8B0AF2FD9.tgz",
+      "sha256": "4f38b74ec29cf9e3e32738191a13d1bd0ef2e473bd7e46d2e81881084f5093bb"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/C6C45E972DC4B341CE5DDC9BB1F3A70B.tgz",
+      "file": "archives/C6C45E972DC4B341CE5DDC9BB1F3A70B.tgz",
+      "sha256": "7fb804ea0a3b139dd47350f55c94f54abd268946f4b10bb9d3f00b3aa844200f"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/A4E43B9A26451DB8EA99603201A38B29.tgz",
+      "file": "archives/A4E43B9A26451DB8EA99603201A38B29.tgz",
+      "sha256": "8ae50192641c344f20d836d46eb2c79fbf97cb65c9f5c8e9ef9c6a1f403700d4"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/AE911C4B307830716480AF01A3CE8D5F.tgz",
+      "file": "archives/AE911C4B307830716480AF01A3CE8D5F.tgz",
+      "sha256": "ffc24a5e5bb690ace605f88f75a138ee3494e855b12c9e1f07f6e03b4437eb12"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/74C4E18C463FD7F3C0C19200216ED26D.tgz",
+      "file": "archives/74C4E18C463FD7F3C0C19200216ED26D.tgz",
+      "sha256": "ae0100e2a5d0669bca46dcd475cc1e42d5d385ee1d2f5d9cb36f243b67534231"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6706197504-d3452137032/2023-06-30/BE2164FF6B5FFD7A6FCD3AAD9D58FC77.tgz",
+      "file": "archives/BE2164FF6B5FFD7A6FCD3AAD9D58FC77.tgz",
+      "sha256": "63ddf5f96faafd72d14f855d1e560732a6e93186a5d488b3527c09e56420ab7d"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-13/028CC1F2BC61EB59E7540CBDDB5972DC.tgz",
+      "file": "archives/028CC1F2BC61EB59E7540CBDDB5972DC.tgz",
+      "sha256": "6b49640fde2b7093b7188b12ef95d24fde4d30fe64002c9cebed0ffa3f8884a6"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-11/16B27648F7808751E8BBB503EC8B3419.tgz",
+      "file": "archives/16B27648F7808751E8BBB503EC8B3419.tgz",
+      "sha256": "90692d2d3f0e64fc01a1f6f8932205d8fb0fb46d73e069026cff804309a4ec48"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/D1605A15FDB5F37BC8D5DABB998D01D0.tgz",
+      "file": "archives/D1605A15FDB5F37BC8D5DABB998D01D0.tgz",
+      "sha256": "b611192bec97fbf7e4139e61826076ffd6a814846baaf83d895322c22b657624"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/17A92F778BA3F9F90E866C1A10FA39CF.tgz",
+      "file": "archives/17A92F778BA3F9F90E866C1A10FA39CF.tgz",
+      "sha256": "b81b327dd5a80851a12829bd78849f95b013cc8114961cef2c6610832fd5fd91"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/4733E996CAFB56617176FC1B51CE2299.tgz",
+      "file": "archives/4733E996CAFB56617176FC1B51CE2299.tgz",
+      "sha256": "37b55228e06a4efaa445da7961010e8aee656b3a0bf9cd9920143a00d61d99c6"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/BF438B23341E3315328129688BE6ABDB.tgz",
+      "file": "archives/BF438B23341E3315328129688BE6ABDB.tgz",
+      "sha256": "a197389bf93a28d1014daa0a74999bee984eca4326435f03ed099eda0f3e079a"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/63977A41FF076159F507602815C719FE.tgz",
+      "file": "archives/63977A41FF076159F507602815C719FE.tgz",
+      "sha256": "bf2db506b73b8b4a697785ba4adcda40ab1d460bbc5e2007f10c41bbcece86f1"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/B20F9EDAEAE4B9E5A611F468A78AF47A.tgz",
+      "file": "archives/B20F9EDAEAE4B9E5A611F468A78AF47A.tgz",
+      "sha256": "550b1683c8c5ed8d6aedb6ea735a9a673f44cdba9df152b8b59f860d94ff0256"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/7F4A89337356C24C1C45002839059023.tgz",
+      "file": "archives/7F4A89337356C24C1C45002839059023.tgz",
+      "sha256": "725fe7c4f903fba0826cb613960082cb401f9aaf2411c9ab39adb6f79ef72aa8"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6890580736-d3500282628/2023-07-10/990CCD45C8C459B1AD2D78462C52C871.tgz",
+      "file": "archives/990CCD45C8C459B1AD2D78462C52C871.tgz",
+      "sha256": "287c995b36897dd2ef0a989a2b9e7e0ffab2b62b8b3ee5db98dc32f128a841a9"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-20/9CA9C9427F71DD740FA84FC7BB89EA8F.tgz",
+      "file": "archives/9CA9C9427F71DD740FA84FC7BB89EA8F.tgz",
+      "sha256": "7cde39b22aba1dadbe8c65037786a2906f2cbd9851b609d75d84c4603678152c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-18/3A7F2AC3E28DE98DE3CF0D449530FF0C.tgz",
+      "file": "archives/3A7F2AC3E28DE98DE3CF0D449530FF0C.tgz",
+      "sha256": "80aea7ad42e1ad931f04e02a12c1c0ec08134c70c316c1d63049772e0dacd382"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/ED21067CC72D6EE5C394C226FAC759B3.tgz",
+      "file": "archives/ED21067CC72D6EE5C394C226FAC759B3.tgz",
+      "sha256": "1a7d64bb118ab8c9d0bc7631b1572a78f427784431d4738209c8faa12a115ff1"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/9C8C1CFBFD20132680161AFA2B78ED43.tgz",
+      "file": "archives/9C8C1CFBFD20132680161AFA2B78ED43.tgz",
+      "sha256": "b415a64d2f79339326201fcb1c2c6a36a84b598c857997f2a11aa101c8365444"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/8446C30948377F69083BC82D4FFF5FB2.tgz",
+      "file": "archives/8446C30948377F69083BC82D4FFF5FB2.tgz",
+      "sha256": "123709b5749d626b697195ecc6068303c9316a7eead22775d813a321180b0083"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/4A92A8290A39789B0304A98A0FB6A389.tgz",
+      "file": "archives/4A92A8290A39789B0304A98A0FB6A389.tgz",
+      "sha256": "16370b4002c9b3a210945d36babf8abf229805bac5d441a61c2e9f92444b1982"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/34E02974B05C045B411504542019B974.tgz",
+      "file": "archives/34E02974B05C045B411504542019B974.tgz",
+      "sha256": "4a12c2efb3724b04a32b02736be36adf85c75ed264046280e62c71dc5b917077"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/708A8EA0A5ECF9928B83D3ECA9F9A5A3.tgz",
+      "file": "archives/708A8EA0A5ECF9928B83D3ECA9F9A5A3.tgz",
+      "sha256": "88ba8d50b0c7ba6fa8334efd19a6ab3dd386d29b38131d2229b9c84d95b04156"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s6981484800-d3524616345/2023-07-17/210F6F939E0E418B2CE659AD99E3A8A9.tgz",
+      "file": "archives/210F6F939E0E418B2CE659AD99E3A8A9.tgz",
+      "sha256": "1f517936ec816f89c3972f8bee042c7f034210f9ad91720cae585a4678931e7d"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-08-01/6FB3C3CB4FB66451C838F09134C0572A.tgz",
+      "file": "archives/6FB3C3CB4FB66451C838F09134C0572A.tgz",
+      "sha256": "269fc7abb6abd22b0d49c70370d456fac8258ddd9b0fec6c06e711f7c2779aba"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/D79EF27CCAA1543127D2673D12F2B7F1.tgz",
+      "file": "archives/D79EF27CCAA1543127D2673D12F2B7F1.tgz",
+      "sha256": "ff4745fd877ea9fb391e95c4cfb79543f98d0f0ed05d5e4650b8f5d182189fd6"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/F2736DF23960F21AFC930572392F8BF3.tgz",
+      "file": "archives/F2736DF23960F21AFC930572392F8BF3.tgz",
+      "sha256": "9f5dad764867ae8925961aab2b29a1c0cf6b0bbb6f26de3c15aa5b0bdb9c0156"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/45066455C97985ED7669601F53AF4050.tgz",
+      "file": "archives/45066455C97985ED7669601F53AF4050.tgz",
+      "sha256": "09fb4c435fdb58ab4df26acbb9ca83db13dfa712adc2dd892f7db513363f7318"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/B8B84BE86E3D64EEC274F15A6304D344.tgz",
+      "file": "archives/B8B84BE86E3D64EEC274F15A6304D344.tgz",
+      "sha256": "140bb9a79d5b623277a862ee5d1d888c35d23d4779d74d189c3aa8c82f31c730"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/3DE4541F341F65CFFDF721BE21322633.tgz",
+      "file": "archives/3DE4541F341F65CFFDF721BE21322633.tgz",
+      "sha256": "d477692a85c41e70713834a21b18447d869790badddeb02693b90c08d69efccb"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/5F7D6CEADD59D7776A6DD5D0D1E310B5.tgz",
+      "file": "archives/5F7D6CEADD59D7776A6DD5D0D1E310B5.tgz",
+      "sha256": "0bbfa5bb2b88332d194e0160237679fc2277ff15b7d868b7856be3b3e5cb6e22"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/0D8B6067DF157269B9E5DE21323A806F.tgz",
+      "file": "archives/0D8B6067DF157269B9E5DE21323A806F.tgz",
+      "sha256": "39f9585f4515033ae69a535aa1e3c55925f95d66853fb309423f0dc316fc0a39"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7131841024-d3563447968/2023-07-29/3CD530E1A2CFDF35F13240C689F42B12.tgz",
+      "file": "archives/3CD530E1A2CFDF35F13240C689F42B12.tgz",
+      "sha256": "30193666c130a0b96882bf7532a63a51a9e0ceece66d71f518d5b1e4aa73ff69"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-06/C86C550C6C8CCDB19585638B62FE2C59.tgz",
+      "file": "archives/C86C550C6C8CCDB19585638B62FE2C59.tgz",
+      "sha256": "78b4666acfeb8b49be0252e172c1988995a150dfabd6a72c04653ec18bc97fa9"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-03/00DCA6C7CB7F08115E306FA79B1F3EB2.tgz",
+      "file": "archives/00DCA6C7CB7F08115E306FA79B1F3EB2.tgz",
+      "sha256": "7e482458750883fa01fdffc62bba3bcbf436ec26827733733037d7394bbbe5a7"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-03/716A56D6C057B06450669EC8C4734EC4.tgz",
+      "file": "archives/716A56D6C057B06450669EC8C4734EC4.tgz",
+      "sha256": "1c35bb39c5e50a5b10823abb1e5204e91a5867b06be7833e9131004929910c86"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-02/F4A76F7E8D818C360B96EED5FDE4CEEB.tgz",
+      "file": "archives/F4A76F7E8D818C360B96EED5FDE4CEEB.tgz",
+      "sha256": "d48914e5d2c31afed8444ab998f8ca3263d14554a666b327ae5dbd5b095e01f9"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-02/10E262F7C561E7B26A4C3D2F52672D4F.tgz",
+      "file": "archives/10E262F7C561E7B26A4C3D2F52672D4F.tgz",
+      "sha256": "b2e689f560da612031bb30b3a44c3597df63d405a4fb79ceb1a3ae046604b999"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-02/9FCD70F403BEADC9B3BA1EB12BD1DF26.tgz",
+      "file": "archives/9FCD70F403BEADC9B3BA1EB12BD1DF26.tgz",
+      "sha256": "88a59af1db53aca27379f4601efc56cfe8dbd1b59eba9257640eae5890e72d7f"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-02/622DBF7C37B041D62FAD238547ECDB69.tgz",
+      "file": "archives/622DBF7C37B041D62FAD238547ECDB69.tgz",
+      "sha256": "7fa7e2cb32a802ee0bef98ce83772026b29fa0d616092b65b7d1a407784d6849"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7161915648-d3571334277/2023-08-02/7AC3CD115DEBFA13BB3F44C4FC636E9E.tgz",
+      "file": "archives/7AC3CD115DEBFA13BB3F44C4FC636E9E.tgz",
+      "sha256": "b7754aa6f3788d05a6c46b78de52dc1820e5c2f35c84bfa14f1dd3860603d56a"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-26/81102274BE8DCD9612D15C5382C12273.tgz",
+      "file": "archives/81102274BE8DCD9612D15C5382C12273.tgz",
+      "sha256": "d75067b05840e16cbf1ab0475a7547e038dc0bca9088f0460eed269281346343"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/5C72FE1E511C57562C74EFBA5779E25A.tgz",
+      "file": "archives/5C72FE1E511C57562C74EFBA5779E25A.tgz",
+      "sha256": "9d81c1861b50004fb3817cf260e9ef26d9ee8f5486826160c692ca7ca878a4ab"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/288EFB5D07604E394ED79B508F220F38.tgz",
+      "file": "archives/288EFB5D07604E394ED79B508F220F38.tgz",
+      "sha256": "795a9e8cbc6454d32f8e672ca4bca0b8c7994e745f67d6e204a9acdb5ce755f9"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/CC2AF96A7E485DF47FAF3BE101DD3656.tgz",
+      "file": "archives/CC2AF96A7E485DF47FAF3BE101DD3656.tgz",
+      "sha256": "c80a718d23c07fb7914dfecce693055a68d3add09a645fadce0d212617e606f1"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/0142BB63C9B9877F31216AF542C8FAB6.tgz",
+      "file": "archives/0142BB63C9B9877F31216AF542C8FAB6.tgz",
+      "sha256": "323c7eb2797bc0695b9b81a4de4b4860dc10ea204f43272de512da664e06563e"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7560105728-d3675868361/2023-09-25/908C18AFD3C4F938F472E23B10879589.tgz",
+      "file": "archives/908C18AFD3C4F938F472E23B10879589.tgz",
+      "sha256": "8422d25578668c7c3c5997b89e52eac6a8f4992879cf0d8f1382dc0df83df0ec"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-27/5D95B7FC7F595EC91E8A282F67CBD1E3.tgz",
+      "file": "archives/5D95B7FC7F595EC91E8A282F67CBD1E3.tgz",
+      "sha256": "0b5f5e7b7b2574b8c20da63a3fd5bd83c0eced4541dc0534f3e2fc89807c25bc"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-23/0BD30707264D6E69A6B4A8C3EBF29156.tgz",
+      "file": "archives/0BD30707264D6E69A6B4A8C3EBF29156.tgz",
+      "sha256": "7576f22208e499b320e666c4d4725c76da8a5cb2ac48c90beb02b2ea32393cf9"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/5D69DE3B163695730E1210454645DDE7.tgz",
+      "file": "archives/5D69DE3B163695730E1210454645DDE7.tgz",
+      "sha256": "f7d10d68b0d089ada2690a25e3e8fda91016189adfca4664d43c17c7c84ae077"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/BDFE1AA426F4F295280EB61ABC1988E4.tgz",
+      "file": "archives/BDFE1AA426F4F295280EB61ABC1988E4.tgz",
+      "sha256": "838c9b1aa819f20ec891de7402cf48c4ac4bc7931155b2a7c9329262a782d60c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/0611CBD949B5169DAB4AED25AB8A86F8.tgz",
+      "file": "archives/0611CBD949B5169DAB4AED25AB8A86F8.tgz",
+      "sha256": "fb63ca3f5e737c98c97a80d719533214e8d890951c510de45f4ecd5c992caf9b"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/13F918CA1A6B5594FA68EB420ACF0D8F.tgz",
+      "file": "archives/13F918CA1A6B5594FA68EB420ACF0D8F.tgz",
+      "sha256": "104c26ffe630750c8caea5f84f439bfdb64118a55d3acc748586885cab561c6d"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/C6FCB9C285777C7CDA55FC0520E5A30F.tgz",
+      "file": "archives/C6FCB9C285777C7CDA55FC0520E5A30F.tgz",
+      "sha256": "7b5a30811ba8e9a6f13e3257f5bbb98922eb59896a8793f5e37dfa6354a91f2d"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s7860356864-d3754557269/2023-10-22/08FDBF0D05F8461B4477B755206B65E0.tgz",
+      "file": "archives/08FDBF0D05F8461B4477B755206B65E0.tgz",
+      "sha256": "0ac3271a4dddedca3444994dd844c3fd100f3ae163bba495e1f77f221781ba5e"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-28/3015EE086BB613867F81DAB73DAEC4A3.tgz",
+      "file": "archives/3015EE086BB613867F81DAB73DAEC4A3.tgz",
+      "sha256": "9e750d1bfb03c06c606a1dd0a557a18cc63f9787cae711fb351696c52d151d72"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-23/6C3F2135F349487D1F62060B51246FC1.tgz",
+      "file": "archives/6C3F2135F349487D1F62060B51246FC1.tgz",
+      "sha256": "7d14a560db60ad50b75eaea4ca918c9a8b43df4526de9e1ef03764a912b6d1b8"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-22/B05570570F0AB0F3E3583B94A02543B9.tgz",
+      "file": "archives/B05570570F0AB0F3E3583B94A02543B9.tgz",
+      "sha256": "866807f727370215f98b66316fae16fc83ee7933bb60fa35c8f0a35c61402e5a"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-22/012067D8EA018A4A85AF3093C1C04BDC.tgz",
+      "file": "archives/012067D8EA018A4A85AF3093C1C04BDC.tgz",
+      "sha256": "b264cf0a96e0c789dcaa5ed91731bd95d09a686f122764d750d013477102dee7"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-22/D9E9609AA907176430D716B62422D5AF.tgz",
+      "file": "archives/D9E9609AA907176430D716B62422D5AF.tgz",
+      "sha256": "acd07802e391cec8b953d2080541edd12653a3cead2a71c4fecad6774aed689c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8160926464-d3833541428/2023-11-22/4A44298E9965B19D968570BB05D1B451.tgz",
+      "file": "archives/4A44298E9965B19D968570BB05D1B451.tgz",
+      "sha256": "637a989746b3acab78639dca4a607824d73ec65bc0b1e215553f4fe19539088c"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-26/F6136575297216B96C6D4520A749D0F0.tgz",
+      "file": "archives/F6136575297216B96C6D4520A749D0F0.tgz",
+      "sha256": "4d3443838c2429803c541ec80c979e975c1f5a5d3c34ae42174df4b23dc05133"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-22/017875CD4524577D28C7BF98FE1A31BD.tgz",
+      "file": "archives/017875CD4524577D28C7BF98FE1A31BD.tgz",
+      "sha256": "75a4c6b245b8ca45fce520ccbd856d9d0260bd872c9507faf1b1df3fb133defa"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-22/2D082AC13D2B86AB859ABECA352306FC.tgz",
+      "file": "archives/2D082AC13D2B86AB859ABECA352306FC.tgz",
+      "sha256": "f5666846ceeafa6c5647e95df1bc407b3826f6bdd908135c2941793a3f50cef5"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-22/741E00DC185C20BEF0FD820368BA5C53.tgz",
+      "file": "archives/741E00DC185C20BEF0FD820368BA5C53.tgz",
+      "sha256": "5d9cbf4143939ecb8d18820f467f88a46fa7157f8c82498278dee1afb77cab27"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-22/55F941C20FE50E54CACE0477851BE1D5.tgz",
+      "file": "archives/55F941C20FE50E54CACE0477851BE1D5.tgz",
+      "sha256": "fdc38b7fbfb3c486b4d42577c9a7386a233d601d996ee9a435f093814827b87b"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-22/CF0523C3230C9977BF464FA07226C574.tgz",
+      "file": "archives/CF0523C3230C9977BF464FA07226C574.tgz",
+      "sha256": "8d18a7b13b1b428c6c2e67f6634ecd587495fcedbe92de2ceaf78a0210dc0ace"
+    },
+    {
+      "url": "https://katagotraining.org/media/games_zip/kata1/kata1-b18c384nbt-s8768585216-d3995752096/2024-01-22/9C40C0713C0D438F40CCFBE4D0F8BBC3.tgz",
+      "file": "archives/9C40C0713C0D438F40CCFBE4D0F8BBC3.tgz",
+      "sha256": "a9ce4d6754d3c75be09fddf36b21217372699509dbdcfe98b8818e5b4c70aec4"
+    }
+  ]
+}

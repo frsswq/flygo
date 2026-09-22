@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, StringConstraints
 
 from flygo.research import MODELS, ModelName
 
@@ -28,6 +28,35 @@ class PlannedArtifact(StrictModel):
     sha256: Sha256 | None
 
 
+class SourcePage(StrictModel):
+    url: str
+    sha256: Sha256
+    sampled_game_ids: tuple[str, ...]
+
+
+def source_archive_path(value: str) -> str:
+    path = PurePosixPath(value)
+    if not path.parts or path.is_absolute() or ".." in path.parts or "\\" in value:
+        raise ValueError("Expected an archive path inside the source directory")
+    return value
+
+
+SourceArchivePath = Annotated[str, AfterValidator(source_archive_path)]
+
+
+class SourceArchive(StrictModel):
+    url: str
+    file: SourceArchivePath
+    sha256: Sha256
+
+
+class FeasibilitySources(StrictModel):
+    schema_version: Literal[1]
+    selection: str
+    pages: tuple[SourcePage, ...]
+    archives: tuple[SourceArchive, ...]
+
+
 class CorpusProtocol(StrictModel):
     board_size: Literal[19]
     komi: float
@@ -41,6 +70,8 @@ class CorpusProtocol(StrictModel):
     teacher_configuration: Artifact
     pilot_queries: Artifact
     output: PlannedArtifact
+    work_directory: Path
+    games_per_shard: Literal[1]
     timed_batch_positions: int = Field(ge=50, le=500)
     timed_batch_report: PlannedArtifact
 
@@ -263,6 +294,8 @@ def dry_run(protocol: FeasibilityProtocol) -> dict[str, Any]:
             "visits": protocol.corpus.visits,
             "stride": protocol.corpus.stride,
             "timed_batch_positions": protocol.corpus.timed_batch_positions,
+            "work_directory": str(protocol.corpus.work_directory),
+            "games_per_shard": protocol.corpus.games_per_shard,
             "output": str(protocol.corpus.output.path),
         },
         "circuit": {

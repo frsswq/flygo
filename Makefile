@@ -1,4 +1,4 @@
-.PHONY: dev api build static browser check
+.PHONY: dev api build static browser check label label-status
 
 dev: ## Run the browser app on Vite. No backend is needed.
 	@npm --prefix web run dev
@@ -13,7 +13,13 @@ static: ## Build the deployable static app for a host that serves the root
 	@env FLYGO_PUBLIC_BASE=/ FLYGO_OUT_DIR=dist npm --prefix web run build
 
 browser: ## Run the browser regression when Chrome or Chromium is available
-	@if [ -n "$$BROWSER_BIN" ] || ls "$$HOME"/.cache/ms-playwright/chromium-*/chrome-linux64/chrome >/dev/null 2>&1 || command -v chromium google-chrome >/dev/null 2>&1; then npm --prefix web run test:browser; else echo "browser regression skipped: no Chrome or Chromium found (set BROWSER_BIN)"; fi
+	@scripts/run_browser_tests.sh
+
+label: ## Complete one resumable feasibility teacher shard
+	@uv run python scripts/teacher_feasibility.py run --max-shards 1
+
+label-status: ## Show feasibility teacher labelling progress
+	@uv run python scripts/teacher_feasibility.py status
 
 check: ## Run every Python and web check
 	@uv run ruff format --check .
@@ -25,4 +31,4 @@ check: ## Run every Python and web check
 	@npm --prefix web run typecheck
 	@npm --prefix web run knip
 	@npm --prefix web test
-	@$(MAKE) --no-print-directory browser
+	@${MAKE} --no-print-directory browser

@@ -10,8 +10,8 @@
     "visits": 256,
     "stride": 1,
     "source_manifest": {
-      "path": "docs/teacher-pilot/sources.json",
-      "sha256": "64d3b1420dfc70ae95b44c962655b2ac38be39efd72a23b48948a864521d65db"
+      "path": "docs/protocols/feasibility-sources-v1.json",
+      "sha256": "86da2721cd1eddc947f5f1230de5cd865df0a495da52d1da3f45f05e71ab3909"
     },
     "data_permission": {
       "path": "data/raw/teacher-pilot/data-permission.html",
@@ -37,6 +37,8 @@
       "path": "data/datasets/teacher-feasibility-19-v1/manifest.json",
       "sha256": null
     },
+    "work_directory": "data/raw/teacher-feasibility-19-v1/corpus",
+    "games_per_shard": 1,
     "timed_batch_positions": 100,
     "timed_batch_report": {
       "path": "data/raw/teacher-feasibility-19-v1/timing.json",
@@ -79,6 +81,6 @@
   },
   "approvals": {
     "timed_batch_approved": true,
-    "full_labelling_approved": false
+    "full_labelling_approved": true
   }
 }

@@ -24,5 +24,6 @@ Its SHA-256 is `40f1d63a868cbbb8cb6c1a55c3b99e4cb9b2d0085637da7c14fd16db8a8e6485
 The raw analysis SHA-256 is `91035398fd77646c4dfcedf9df7a6263eeb7b001e718fe0dd0040c53f9cc9150`.
 The query SHA-256 is `375bf86002d4ebe10a903822021c3820ca1681af093ce2a0bc9b7635b368b16a`.
 
-The full 10,000-position run remains unapproved in the protocol.
-No full labelling process was started.
+The owner approved the 10,000-position target after reviewing this estimate.
+Labelling will use independently completed shards so the owner can run it on and off.
+No full labelling process was started during the timing checkpoint.

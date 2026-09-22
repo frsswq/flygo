@@ -39,7 +39,7 @@ def _windows_path(path: Path) -> str:
     return result.stdout.strip()
 
 
-def _engine_command(protocol: FeasibilityProtocol) -> list[str]:
+def engine_command(protocol: FeasibilityProtocol) -> list[str]:
     engine = protocol.corpus.teacher_executable.path
     configuration = protocol.corpus.teacher_configuration.path
     network = protocol.corpus.teacher_network.path
@@ -119,7 +119,7 @@ def measure(protocol: FeasibilityProtocol, *, timeout: float) -> dict[str, Any]:
         temporary_paths = [Path(name) for _, name in handles]
         analysis_descriptor, _ = handles[0]
         stderr_descriptor, _ = handles[1]
-        command = _engine_command(protocol)
+        command = engine_command(protocol)
         before_rss = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
         started = time.monotonic()
         with (

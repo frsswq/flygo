@@ -8,6 +8,7 @@ import pytest
 
 from flygo.feasibility import (
     FeasibilityProtocol,
+    FeasibilitySources,
     dry_run,
     timing_queries,
     validate_protocol,
@@ -42,6 +43,8 @@ def protocol_payload(tmp_path: Path) -> dict[str, object]:
             "teacher_configuration": pinned,
             "pilot_queries": pinned,
             "output": {"path": str(tmp_path / "dataset.json"), "sha256": None},
+            "work_directory": str(tmp_path / "corpus-work"),
+            "games_per_shard": 1,
             "timed_batch_positions": 100,
             "timed_batch_report": {"path": str(tmp_path / "timing.json"), "sha256": None},
         },
@@ -68,7 +71,7 @@ def protocol_payload(tmp_path: Path) -> dict[str, object]:
         },
         "approvals": {
             "timed_batch_approved": True,
-            "full_labelling_approved": False,
+            "full_labelling_approved": True,
         },
     }
 
@@ -82,7 +85,7 @@ def test_feasibility_dry_run_lists_every_cell_without_opening_test_data(tmp_path
     assert result["training"]["cell_count"] == 18
     assert result["training"]["final_test"] is False
     assert result["teacher"]["target_labelled_positions"] == 10_000
-    assert any("awaits the timed-batch estimate" in item for item in result["blockers"])
+    assert any("dataset has not been completed" in item for item in result["blockers"])
 
 
 @pytest.mark.parametrize(
@@ -257,3 +260,34 @@ def test_failed_teacher_timing_does_not_publish_report(tmp_path: Path) -> None:
     assert run.returncode != 0
     assert "status 2" in run.stderr
     assert not report_path.exists()
+
+
+def test_feasibility_sources_reject_path_escape() -> None:
+    manifest = FeasibilitySources.model_validate(
+        {
+            "schema_version": 1,
+            "selection": "fixed source order",
+            "pages": [
+                {
+                    "url": "https://example.com/games/",
+                    "sha256": "0" * 64,
+                    "sampled_game_ids": ["1"],
+                }
+            ],
+            "archives": [
+                {
+                    "url": "https://example.com/game.tgz",
+                    "file": "archives/game.tgz",
+                    "sha256": "1" * 64,
+                }
+            ],
+        }
+    )
+    assert manifest.selection == "fixed source order"
+    assert manifest.pages[0].sampled_game_ids == ("1",)
+    assert manifest.archives[0].file == "archives/game.tgz"
+
+    payload = manifest.model_dump()
+    payload["archives"][0]["file"] = "../game.tgz"
+    with pytest.raises(ValueError, match="archive path"):
+        FeasibilitySources.model_validate(payload)
