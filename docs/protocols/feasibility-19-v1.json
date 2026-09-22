@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "name": "feasibility-19-v1",
+  "source_revision": "34264a9",
+  "claim_scope": "feasibility-only",
+  "corpus": {
+    "board_size": 19,
+    "komi": 7.5,
+    "target_labelled_positions": 10000,
+    "visits": 256,
+    "stride": 1,
+    "source_manifest": {
+      "path": "docs/teacher-pilot/sources.json",
+      "sha256": "64d3b1420dfc70ae95b44c962655b2ac38be39efd72a23b48948a864521d65db"
+    },
+    "data_permission": {
+      "path": "data/raw/teacher-pilot/data-permission.html",
+      "sha256": "96b271505cd60735c2927e65b3cd3a10247df0eb56e822b9c7b6dbbe65f3d0b8"
+    },
+    "teacher_network": {
+      "path": "data/raw/teacher-pilot/teacher.bin.gz",
+      "sha256": "9d7a6afed8ff5b74894727e156f04f0cd36060a24824892008fbb6e0cba51f1d"
+    },
+    "teacher_executable": {
+      "path": "data/raw/teacher-pilot/engine/katago.exe",
+      "sha256": "0e6cc918840e6ef67c0b4a21109585306df7aaa3772971574e58deb8e8fc0575"
+    },
+    "teacher_configuration": {
+      "path": "docs/teacher-pilot/analysis.cfg",
+      "sha256": "89fc12a11c2ab1474584f63b581a7a10532e6a0a04b1da5b97da470828541cab"
+    },
+    "output": {
+      "path": "data/datasets/teacher-feasibility-19-v1/manifest.json",
+      "sha256": null
+    },
+    "timed_batch_positions": 100,
+    "timed_batch_report": {
+      "path": "data/raw/teacher-feasibility-19-v1/timing.json",
+      "sha256": null
+    }
+  },
+  "circuit": {
+    "nodes": 500,
+    "source_graph": {
+      "path": "data/processed/malecns-traced-w5.parquet",
+      "sha256": "4c893fd38c597ecca6a5746f8c0835d6670a5d2a8f8fc4f69eaac2984702dc63"
+    },
+    "output": {
+      "path": "data/processed/circuits-feasibility-v1/circuit-500.parquet",
+      "sha256": null
+    }
+  },
+  "training": {
+    "models": [
+      "male-cns",
+      "rewired",
+      "weight-shuffled",
+      "disconnected",
+      "linear",
+      "mlp"
+    ],
+    "seeds": [7, 17, 27],
+    "epochs": 10,
+    "batch_size": 128,
+    "learning_rate": 0.001,
+    "steps": 8,
+    "retention": 0.35,
+    "recurrent_gain": 0.9,
+    "normalization": "incoming",
+    "weights": "weighted",
+    "value_weight": 1.0,
+    "final_test": false,
+    "output": "data/research/feasibility-19-v1",
+    "summary": "data/research/feasibility-19-v1/summary.json"
+  },
+  "approvals": {
+    "timed_batch_approved": true,
+    "full_labelling_approved": false
+  }
+}

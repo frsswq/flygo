@@ -57,6 +57,7 @@ ignore_names = [
   "comparison_table",
   "fit_readout",
   "linear_baseline_logits",
+  "model_config",
   "model_status",
   "neuron_type",
   "ruleset",
