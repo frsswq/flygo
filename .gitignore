@@ -18,6 +18,10 @@ data/raw/*
 data/processed/*
 !data/processed/.gitkeep
 
+# Local-only nested data repository for teacher labels and published datasets.
+# It is never pushed. See data/DATA-REPO.local.md.
+data/.git/
+
 # Training and evaluation outputs
 data/datasets/
 data/models/

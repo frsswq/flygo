@@ -54,8 +54,11 @@ The teacher weights use the [KataGo Neural Network License](https://katagotraini
 The engine uses the [KataGo engine license](https://github.com/lightvector/KataGo/blob/v1.18.1/LICENSE).
 
 The preparation script retains hashed copies of the data-use policy and network license beside the raw inputs.
-Downloaded games, weights, engine files, labels, and datasets stay outside Git.
-Only the recipe, source hashes, configuration, and verification results belong in Git.
+Downloaded games, weights, engine files, labels, and datasets stay outside the main repository Git history.
+Only the recipe, source hashes, configuration, and verification results belong in the main repository.
+The feasibility corpus labels and the published feasibility dataset are tracked by a local-only nested Git repository at `data/`.
+That repository has no remote and must never be pushed.
+See `data/DATA-REPO.local.md`.
 
 ## Teacher and machine
 

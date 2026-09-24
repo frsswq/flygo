@@ -35,7 +35,10 @@ The remaining runtime will vary with game length, batching, temperature, and oth
 
 ## Stored evidence
 
-All SGFs, queries, raw answers, logs, and completion manifests stay outside Git under `data/raw/teacher-feasibility-19-v1/corpus/`.
+All SGFs, queries, raw answers, logs, and completion manifests stay outside the main repository Git history under `data/raw/teacher-feasibility-19-v1/corpus/`.
+A local-only nested Git repository at `data/` tracks the corpus labels and the published dataset for protection against accidental loss.
+That repository has no remote and must never be pushed.
+See `data/DATA-REPO.local.md`.
 The committed source manifest pins 82 official archive files and the captured source pages by SHA-256.
 The prepared selection-manifest SHA-256 is `b7c0946f55961debdff89e297eabe46cc517587db00ac1cd09a7a7e2b78f2b76`.
 The selection takes archives in manifest order and SGF members in filename order.
