@@ -80,6 +80,7 @@ The encoder, policy readout, and value readout train around it.
 - [Research foundation](docs/research.md): matched controls, reproducible screening, and claim limits.
 - [KataGo pilot](docs/teacher-pilot.md): the completed real-data pipeline check.
 - [Feasibility labelling](docs/feasibility-labelling.md): resume the approved 10,000-position teacher run one shard at a time.
+- [Feasibility result](docs/feasibility-result.md): the completed supervised screen, its controls, and its negative outcome.
 - [Engineering notes](docs/engineering.md): repository structure, binary formats, fixtures, and checks.
 - [Deployment](docs/deploy.md): static Cloudflare deployment.
 - [Data profile](docs/data-profile.json): measured facts from the official release.

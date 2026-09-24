@@ -61,3 +61,12 @@ It does not evaluate any model or read test targets for model selection.
 
 The fixed 500-neuron circuit is already selected at `data/processed/circuits-feasibility-v1/circuit-500.parquet`.
 Its SHA-256 is `bf50ce0d323d96fe68b37b41326683ed7014e3d99d45607442d770cb222260d2`.
+
+## Result
+
+After the dataset is published, the matched screen and its summary are recorded in the [feasibility result](feasibility-result.md).
+Regenerate the summary from the completed runs with:
+
+```bash
+make summarize
+```

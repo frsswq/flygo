@@ -1,4 +1,4 @@
-.PHONY: dev api build static browser check label label-status label-finalize
+.PHONY: dev api build static browser check label label-status label-finalize summarize
 
 dev: ## Run the browser app on Vite. No backend is needed.
 	@npm --prefix web run dev
@@ -22,6 +22,9 @@ label-status: ## Show feasibility teacher labelling progress
 	@uv run python scripts/teacher_feasibility.py status
 label-finalize: ## Build the verified dataset after every teacher shard completes
 	@uv run python scripts/teacher_feasibility.py finalize
+
+summarize: ## Write the feasibility screen summary from the completed runs
+	@uv run python scripts/summarize_research.py --runs data/research/feasibility-19-v1
 
 check: ## Run every Python and web check
 	@uv run ruff format --check .
